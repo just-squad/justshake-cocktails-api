@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{2C48B307-A82D-4E27-B8B2-319F32B06623}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JustSquad.Cocktails", "src\JustSquad.Cocktails\JustSquad.Cocktails.csproj", "{6BF38154-0CD5-41C8-8937-2ABB63402D23}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "common", "common", "{5F27A93C-7C78-4D2D-B46B-40E6D2BA468C}"
+	ProjectSection(SolutionItems) = preProject
+		Directory.Build.props = Directory.Build.props
+		Directory.Build.targets = Directory.Build.targets
+		LICENSE = LICENSE
+		README.md = README.md
+		.gitignore = .gitignore
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6BF38154-0CD5-41C8-8937-2ABB63402D23}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6BF38154-0CD5-41C8-8937-2ABB63402D23}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6BF38154-0CD5-41C8-8937-2ABB63402D23}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6BF38154-0CD5-41C8-8937-2ABB63402D23}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{6BF38154-0CD5-41C8-8937-2ABB63402D23} = {2C48B307-A82D-4E27-B8B2-319F32B06623}
+	EndGlobalSection
+EndGlobal
