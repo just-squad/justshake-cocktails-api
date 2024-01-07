@@ -1,0 +1,13 @@
+app:
+  name: 'justshake-cocktails'
+  version: '1.0.0'
+
+http:
+  port: '8080'
+
+logger:
+  log_level: 'debug'
+  rollbar_env: 'justshake-cocktails'
+
+mongodb:
+  connection_string: "mongodb://localhost:27017"
