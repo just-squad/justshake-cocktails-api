@@ -13,7 +13,14 @@ type (
 	}
 )
 
-func GetById(id uuid.UUID) (cocktail_aggregate.Cocktail, error) {
+func New() *CocktailsRepository {
+	return &CocktailsRepository{}
+}
+
+type CocktailsRepository struct {
+}
+
+func (cr *CocktailsRepository) GetById(id uuid.UUID) (cocktail_aggregate.Cocktail, error) {
 	return cocktail_aggregate.Cocktail{
 		uuid.New(),
 		"",
@@ -26,7 +33,7 @@ func GetById(id uuid.UUID) (cocktail_aggregate.Cocktail, error) {
 	}, nil
 }
 
-func GetByFilter(filter cocktail_aggregate.CocktailFilter) (CocktailsPaged, error) {
+func (cr *CocktailsRepository) GetByFilter(filter cocktail_aggregate.CocktailFilter) (CocktailsPaged, error) {
 	return CocktailsPaged{
 		Items:      cocktail_aggregate.Cocktail{},
 		Page:       0,

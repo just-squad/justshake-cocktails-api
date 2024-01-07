@@ -12,7 +12,7 @@ type (
 		App   `yaml:"app"`
 		HTTP  `yaml:"http"`
 		Log   `yaml:"logger"`
-		MONGO `yaml:"mongo"`
+		MONGO `yaml:"mongodb"`
 	}
 
 	// App -.

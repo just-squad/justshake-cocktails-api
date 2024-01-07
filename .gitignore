@@ -1,6 +1,7 @@
 ## Ignore golang files
 /tests
 /.compose
+/.bin
 
 
 ## Ignore Visual Studio temporary files, build results, and

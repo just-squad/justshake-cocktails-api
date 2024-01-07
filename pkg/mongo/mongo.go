@@ -8,12 +8,12 @@ import (
 	"justshake/cocktails/pkg/logger"
 )
 
-type MongoConnection struct {
+type Connection struct {
 	Logger *logger.Interface
 	Client *mongo.Client
 }
 
-func New(url string, logger *logger.Interface) (*MongoConnection, error) {
+func New(url string, logger *logger.Interface) (*Connection, error) {
 	// Set client options
 	l := *logger
 	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
@@ -32,13 +32,13 @@ func New(url string, logger *logger.Interface) (*MongoConnection, error) {
 
 	fmt.Println("Connected to MongoDB!")
 
-	return &MongoConnection{
+	return &Connection{
 		Logger: logger,
 		Client: client}, nil
 }
 
 // Close -.
-func (p *MongoConnection) Close() {
+func (p *Connection) Close() {
 	if p.Client != nil {
 		err := p.Client.Disconnect(context.TODO())
 		if err != nil {

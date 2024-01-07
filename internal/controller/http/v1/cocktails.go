@@ -2,6 +2,7 @@ package v1
 
 import (
 	"github.com/google/uuid"
+	"justshake/cocktails/internal/domain/models"
 	"justshake/cocktails/internal/use_cases"
 	"net/http"
 
@@ -134,7 +135,7 @@ func (r *cocktailsRoutes) getByFilter(c *gin.Context) {
 
 	cocktails, err := r.c.GetByFilter(
 		c.Request.Context(),
-		use_cases.GetByFilterRequest{Ids: request.Ids, Pagination: use_cases.PaginationRequest{
+		use_cases.GetByFilterRequest{Ids: request.Ids, Pagination: models.Pagination{
 			Page:         request.Pagination.Page,
 			ItemsPerPage: request.Pagination.ItemsPerPage,
 		}},
