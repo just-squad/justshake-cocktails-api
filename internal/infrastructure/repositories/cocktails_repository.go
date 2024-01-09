@@ -25,7 +25,6 @@ type CocktailsRepository struct {
 }
 
 func New(mongo *mng.Connection, l logger.Interface) *CocktailsRepository {
-
 	return &CocktailsRepository{mongo: mongo, l: l}
 }
 
@@ -33,13 +32,13 @@ func (cr *CocktailsRepository) getCollection() *mongo.Collection {
 	return cr.mongo.Client.Database(cr.mongo.Database).Collection("cocktails")
 }
 
-func (cr *CocktailsRepository) Create(entity cocktail_aggregate.Cocktail) error {
+func (cr *CocktailsRepository) Create(ctx context.Context, entity cocktail_aggregate.Cocktail) error {
 	collection := cr.getCollection()
 	cr.l.Info(entity.Id.String())
 	entity.SetId()
 
 	// Insert a single document
-	insertResult, err := collection.InsertOne(context.TODO(), entity)
+	insertResult, err := collection.InsertOne(ctx, entity)
 	if err != nil {
 		cr.l.Error(err)
 		return err
@@ -48,13 +47,13 @@ func (cr *CocktailsRepository) Create(entity cocktail_aggregate.Cocktail) error 
 	return nil
 }
 
-func (cr *CocktailsRepository) GetById(id uuid.UUID) (cocktail_aggregate.Cocktail, error) {
+func (cr *CocktailsRepository) GetById(ctx context.Context, id uuid.UUID) (cocktail_aggregate.Cocktail, error) {
 	collection := cr.getCollection()
 
 	var result cocktail_aggregate.Cocktail
 	filter := bson.D{{"id", id}}
 
-	err := collection.FindOne(context.TODO(), filter).Decode(&result)
+	err := collection.FindOne(ctx, filter).Decode(&result)
 	if err != nil {
 		cr.l.Error(err)
 		return cocktail_aggregate.Cocktail{}, err
@@ -65,7 +64,7 @@ func (cr *CocktailsRepository) GetById(id uuid.UUID) (cocktail_aggregate.Cocktai
 	return result, nil
 }
 
-func (cr *CocktailsRepository) GetByFilter(filter cocktail_aggregate.CocktailFilter) (CocktailsPaged, error) {
+func (cr *CocktailsRepository) GetByFilter(ctx context.Context, filter cocktail_aggregate.CocktailFilter) (CocktailsPaged, error) {
 	collection := cr.getCollection()
 
 	findOptions := options.Find()
@@ -87,14 +86,14 @@ func (cr *CocktailsRepository) GetByFilter(filter cocktail_aggregate.CocktailFil
 	var results []cocktail_aggregate.Cocktail
 
 	// Finding multiple documents returns a cursor
-	cur, err := collection.Find(context.TODO(), queryFilter, findOptions)
+	cur, err := collection.Find(ctx, queryFilter, findOptions)
 	if err != nil {
 		cr.l.Error(err)
 		return CocktailsPaged{}, err
 	}
 
 	// Iterate through the cursor
-	for cur.Next(context.TODO()) {
+	for cur.Next(ctx) {
 		var elem cocktail_aggregate.Cocktail
 		err := cur.Decode(&elem)
 		if err != nil {
@@ -110,13 +109,13 @@ func (cr *CocktailsRepository) GetByFilter(filter cocktail_aggregate.CocktailFil
 	}
 
 	// Close the cursor once finished
-	err = cur.Close(context.TODO())
+	err = cur.Close(ctx)
 	if err != nil {
 		cr.l.Error(err)
 		return CocktailsPaged{}, err
 	}
 
-	count, err := collection.CountDocuments(context.TODO(), queryFilter)
+	count, err := collection.CountDocuments(ctx, queryFilter)
 	if err != nil {
 		cr.l.Error(err)
 		return CocktailsPaged{}, err

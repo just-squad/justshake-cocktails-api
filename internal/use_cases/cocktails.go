@@ -16,7 +16,7 @@ func New(cocktailsRepo repositories.CocktailsRepo) *CocktailsUseCase {
 }
 
 func (uc *CocktailsUseCase) GetById(ctx context.Context, request GetByIdRequest) (GetByIdResponse, error) {
-	result, err := uc.cocktailsRepo.GetById(request.Id)
+	result, err := uc.cocktailsRepo.GetById(ctx, request.Id)
 	if err != nil {
 		return GetByIdResponse{}, fmt.Errorf("CocktailsUseCase - GetById - uc.cocktailsRepo.GetById: %w", err)
 	}
@@ -33,7 +33,7 @@ func (uc *CocktailsUseCase) GetById(ctx context.Context, request GetByIdRequest)
 }
 
 func (uc *CocktailsUseCase) GetByFilter(ctx context.Context, req GetByFilterRequest) (GetByFilterResponse, error) {
-	result, err := uc.cocktailsRepo.GetByFilter(cocktail_aggregate.CocktailFilter{
+	result, err := uc.cocktailsRepo.GetByFilter(ctx, cocktail_aggregate.CocktailFilter{
 		Ids:        req.Ids,
 		Pagination: req.Pagination,
 	})

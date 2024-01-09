@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	// import Colly
 	"fmt"
 	"github.com/gocolly/colly"
@@ -144,7 +145,7 @@ func main() {
 	repo := repositories.New(mongo, l)
 
 	for _, c2 := range cocktails {
-		err := repo.Create(c2)
+		err := repo.Create(context.TODO(), c2)
 		if err != nil {
 			fmt.Printf("Err %+v", err)
 		}
