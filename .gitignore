@@ -2,6 +2,7 @@
 /tests
 /.compose
 /.bin
+/cmd/scraper/.inshaker-cache
 
 
 ## Ignore Visual Studio temporary files, build results, and

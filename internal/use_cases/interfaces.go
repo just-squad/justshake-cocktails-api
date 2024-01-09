@@ -27,8 +27,7 @@ type (
 	}
 	GetByFilterResponse struct {
 		Items      []CocktailResponseItem
-		Page       int
-		TotalItems int
+		TotalItems int64
 	}
 	CocktailResponseItem struct {
 		Id          uuid.UUID
@@ -41,9 +40,8 @@ type (
 		Name string
 	}
 	CocktailItemResponseItem struct {
-		Id    int64
 		Name  string
-		Count int32
+		Count int
 		Unit  string
 	}
 	RecipeResponseItem struct {

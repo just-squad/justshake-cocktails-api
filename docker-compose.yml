@@ -20,8 +20,8 @@ services:
     container_name: justshake-cocktails-db
     environment:
       - MONGODB_INITDB_ROOT_USERNAME=justshake-cocktails-user
-      - MONGODB_INITDB_ROOT_PASSWORD=504811DC-0A7F-4F48-9D63-340060EC909F
-      - MONGODB_INITDB_DATABASE=cocktails
+      - MONGODB_INITDB_ROOT_PASSWORD=504811dc-0a7f-4f48-9d63-340060ec909f
+      - MONGODB_INITDB_DATABASE=justshake
     volumes:
       - ./.compose/justshake-cocktails-db/data:/data/db
     ports:

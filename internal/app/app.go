@@ -5,9 +5,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"justshake/cocktails/config"
 	v1 "justshake/cocktails/internal/controller/http/v1"
+	"justshake/cocktails/internal/infrastructure/repositories"
 	"justshake/cocktails/internal/use_cases"
 	"justshake/cocktails/pkg/httpserver"
 	"justshake/cocktails/pkg/logger"
+	"justshake/cocktails/pkg/mng"
 	"os"
 	"os/signal"
 	"syscall"
@@ -20,14 +22,14 @@ func Run(cfg *config.Config) {
 
 	// Конфигурация репозитория
 	var err error
-	//pg, err := postgres.New(cfg.PG.URL, postgres.MaxPoolSize(cfg.PG.PoolMax))
-	//if err != nil {
-	//	l.Fatal(fmt.Errorf("app - Run - postgres.New: %w", err))
-	//}
-	//defer pg.Close()
+	mongo, err := mng.New(cfg.Mongo, l)
+	if err != nil {
+		l.Fatal(fmt.Errorf("app - Run - mng.New: %w", err))
+	}
+	defer mongo.Close()
 
 	// Use case
-	cocktailsUseCase := use_cases.New()
+	cocktailsUseCase := use_cases.New(repositories.New(mongo, l))
 
 	// HTTP Server
 	handler := gin.New()

@@ -30,7 +30,6 @@ func mapToCocktailItemApiResponse(items []use_cases.CocktailItemResponseItem) []
 	result := make([]cocktailItemApiResponse, len(items))
 	for i, item := range items {
 		result[i] = cocktailItemApiResponse{
-			Id:    item.Id,
 			Name:  item.Name,
 			Count: item.Count,
 			Unit:  item.Unit,

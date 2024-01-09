@@ -1,4 +1,4 @@
-package cocktails_repository
+package repositories
 
 import (
 	"github.com/google/uuid"
@@ -7,7 +7,8 @@ import (
 
 type (
 	CocktailsRepo interface {
-		GetById(i1d uuid.UUID) (cocktailAggregate.Cocktail, error)
+		Create(entity cocktailAggregate.Cocktail) error
+		GetById(id uuid.UUID) (cocktailAggregate.Cocktail, error)
 		GetByFilter(filter cocktailAggregate.CocktailFilter) (CocktailsPaged, error)
 	}
 )

@@ -15,7 +15,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/cocktails/get-by-filter": {
+        "/v1/cocktails/get-by-filter": {
             "post": {
                 "description": "Получение списка коктейлей по фильтру",
                 "consumes": [
@@ -62,7 +62,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/cocktails/get-by-id": {
+        "/v1/cocktails/get-by-id": {
             "post": {
                 "description": "Получить информацию о коктейле",
                 "consumes": [

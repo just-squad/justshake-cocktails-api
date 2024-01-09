@@ -106,7 +106,7 @@ definitions:
 info:
   contact: {}
 paths:
-  /cocktails/get-by-filter:
+  /v1/cocktails/get-by-filter:
     post:
       consumes:
       - application/json
@@ -137,7 +137,7 @@ paths:
       summary: Получение списка коктейлей по фильтру
       tags:
       - cocktails
-  /cocktails/get-by-id:
+  /v1/cocktails/get-by-id:
     post:
       consumes:
       - application/json

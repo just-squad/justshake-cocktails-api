@@ -2,32 +2,48 @@ package use_cases
 
 import (
 	"context"
-	"github.com/google/uuid"
+	"fmt"
+	cocktail_aggregate "justshake/cocktails/internal/domain/cocktail-aggregate"
+	"justshake/cocktails/internal/infrastructure/repositories"
 )
 
-func New() *CocktailsUseCase {
-	return &CocktailsUseCase{}
+type CocktailsUseCase struct {
+	cocktailsRepo repositories.CocktailsRepo
 }
 
-type CocktailsUseCase struct {
+func New(cocktailsRepo repositories.CocktailsRepo) *CocktailsUseCase {
+	return &CocktailsUseCase{cocktailsRepo}
 }
 
 func (uc *CocktailsUseCase) GetById(ctx context.Context, request GetByIdRequest) (GetByIdResponse, error) {
-	//if err != nil {
-	//	return GetByIdResponse{}, fmt.Errorf("TranslationUseCase - History - s.repo.GetHistory: %w", err)
-	//}
+	result, err := uc.cocktailsRepo.GetById(request.Id)
+	if err != nil {
+		return GetByIdResponse{}, fmt.Errorf("CocktailsUseCase - GetById - uc.cocktailsRepo.GetById: %w", err)
+	}
 	return GetByIdResponse{
-		Id:                  uuid.New(),
-		Name:                "",
-		RussianName:         "",
-		History:             "",
-		Tags:                nil,
-		Tools:               nil,
-		CompositionElements: nil,
-		Recipe:              RecipeResponseItem{},
+		Id:                  result.Id,
+		Name:                result.Name,
+		RussianName:         result.RussianName,
+		History:             result.History,
+		Tags:                mapToTagResponseItem(result.Tags),
+		Tools:               mapToCocktailsItemResponseItem(result.Tools),
+		CompositionElements: mapToCocktailsItemResponseItem(result.CompositionElements),
+		Recipe:              RecipeResponseItem{result.Recipe.Steps},
 	}, nil
 }
 
 func (uc *CocktailsUseCase) GetByFilter(ctx context.Context, req GetByFilterRequest) (GetByFilterResponse, error) {
-	return GetByFilterResponse{}, nil
+	result, err := uc.cocktailsRepo.GetByFilter(cocktail_aggregate.CocktailFilter{
+		Ids:        req.Ids,
+		Pagination: req.Pagination,
+	})
+
+	if err != nil {
+		return GetByFilterResponse{}, fmt.Errorf("CocktailsUseCase - GetByFilter - uc.cocktailsRepo.GetByFilter: %w", err)
+	}
+
+	return GetByFilterResponse{
+		Items:      mapToCocktailResponseItem(result.Items),
+		TotalItems: result.TotalCount,
+	}, nil
 }

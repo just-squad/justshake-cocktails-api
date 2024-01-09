@@ -44,9 +44,8 @@ type (
 		Name string `json:"name"`
 	}
 	cocktailItemApiResponse struct {
-		Id    int64  `json:"id"`
 		Name  string `json:"name"`
-		Count int32  `json:"count"`
+		Count int    `json:"count"`
 		Unit  string `json:"unit"`
 	}
 	recipeApiResponse struct {
@@ -57,13 +56,12 @@ type (
 		Pagination pagination  `json:"pagination"`
 	}
 	pagination struct {
-		Page         int `json:"page"`
-		ItemsPerPage int `json:"items_per_page"`
+		Page         int64 `json:"page"`
+		ItemsPerPage int64 `json:"items_per_page"`
 	}
 	getByFilterApiResponse struct {
 		Items      []cocktailResponseItem `json:"items"`
-		Page       int                    `json:"page"`
-		TotalItems int                    `json:"total-items"`
+		TotalItems int64                  `json:"total-items"`
 	}
 	cocktailResponseItem struct {
 		Id          uuid.UUID        `json:"id"`
@@ -83,7 +81,7 @@ type (
 // @Param       request body getByIdApiRequest true "Параметр содержащий идентификатор коктейля"
 // @Success     200 {object} cocktailApiResponse
 // @Failure     500 {object} response
-// @Router      /cocktails/get-by-id [post]
+// @Router      /v1/cocktails/get-by-id [post]
 func (r *cocktailsRoutes) getById(c *gin.Context) {
 	var request getByIdApiRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
@@ -123,7 +121,7 @@ func (r *cocktailsRoutes) getById(c *gin.Context) {
 // @Success     200 {object} getByFilterApiResponse
 // @Failure     400 {object} response
 // @Failure     500 {object} response
-// @Router      /cocktails/get-by-filter [post]
+// @Router      /v1/cocktails/get-by-filter [post]
 func (r *cocktailsRoutes) getByFilter(c *gin.Context) {
 	var request getByFilterApiRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
@@ -149,7 +147,6 @@ func (r *cocktailsRoutes) getByFilter(c *gin.Context) {
 
 	c.JSON(http.StatusOK, getByFilterApiResponse{
 		Items:      mapToCocktailResponseItem(cocktails.Items),
-		Page:       cocktails.Page,
 		TotalItems: cocktails.TotalItems,
 	})
 }

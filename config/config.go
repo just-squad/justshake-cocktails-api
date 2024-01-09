@@ -12,7 +12,7 @@ type (
 		App   `yaml:"app"`
 		HTTP  `yaml:"http"`
 		Log   `yaml:"logger"`
-		MONGO `yaml:"mongodb"`
+		Mongo `yaml:"mongodb"`
 	}
 
 	// App -.
@@ -31,9 +31,10 @@ type (
 		Level string `env-required:"true" yaml:"log_level"   env:"LOG_LEVEL"`
 	}
 
-	// MONGO - Конфигурация для подключения к Mongodb серверу
-	MONGO struct {
+	// Mongo - Конфигурация для подключения к Mongodb серверу
+	Mongo struct {
 		ConnectionString string `env-required:"true" yaml:"connection_string" env:"CONNECTION_STRING"`
+		Database         string `env-required:"true" yaml:"database" env:"DATABASE"`
 	}
 )
 
