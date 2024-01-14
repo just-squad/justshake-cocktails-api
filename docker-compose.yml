@@ -7,9 +7,11 @@ services:
     image: justshake-cocktails-web:latest
     container_name: justshake-cocktails-web
     ports:
-      - "2000:80"
+      - "2000:8080"
     depends_on:
       - justshake-cocktails-db
+    volumes:
+      - ./justshake-cocktails-web/secret-config.yml:/config/secret-config.yml
     networks:
       - justsquad
 
