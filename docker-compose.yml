@@ -1,19 +1,17 @@
 version: '3.8'
 services:
-#  justshake-cocktails-web-service:
-#    build:
-#      context: .
-#      dockerfile: Dockerfile
-#    image: justshake-cocktails-web:latest
-#    container_name: justshake-cocktails-web
-#    ports:
-#      - "2000:80"
-#    depends_on:
-#      - justshake-cocktails-db
-#    volumes:
-#      - ./justshake-cocktails-web/appsettings.json:/app/appsettings.json
-#    networks:
-#      - justsquad
+  justshake-cocktails-web-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: justshake-cocktails-web:latest
+    container_name: justshake-cocktails-web
+    ports:
+      - "2000:80"
+    depends_on:
+      - justshake-cocktails-db
+    networks:
+      - justsquad
 
   justshake-cocktails-db:
     image: mongo:7.0.2
