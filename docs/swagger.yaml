@@ -5,6 +5,8 @@ definitions:
         items:
           $ref: '#/definitions/v1.cocktailItemApiResponse'
         type: array
+      country_of_origin:
+        type: string
       history:
         type: string
       id:
@@ -28,8 +30,6 @@ definitions:
     properties:
       count:
         type: integer
-      id:
-        type: integer
       name:
         type: string
       unit:
@@ -37,13 +37,15 @@ definitions:
     type: object
   v1.cocktailResponseItem:
     properties:
+      country_of_origin:
+        type: string
       history:
         type: string
       id:
         type: string
       name:
         type: string
-      russian-name:
+      russian_name:
         type: string
       tags:
         items:
@@ -56,6 +58,10 @@ definitions:
         items:
           type: string
         type: array
+      names:
+        items:
+          type: string
+        type: array
       pagination:
         $ref: '#/definitions/v1.pagination'
     type: object
@@ -65,8 +71,6 @@ definitions:
         items:
           $ref: '#/definitions/v1.cocktailResponseItem'
         type: array
-      page:
-        type: integer
       total-items:
         type: integer
     type: object

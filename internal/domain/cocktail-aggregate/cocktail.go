@@ -7,14 +7,23 @@ import (
 
 type CocktailFilter struct {
 	Ids        []uuid.UUID
+	Names      []string
 	Pagination models.Pagination
 }
+
+type (
+	CocktailsPaged struct {
+		Items      []Cocktail
+		TotalCount int64
+	}
+)
 
 type Cocktail struct {
 	Id                  uuid.UUID      `bson:"id" json:"id"`
 	Url                 string         `bson:"url" json:"url"`
 	Name                string         `bson:"name" json:"name"`
 	RussianName         string         `bson:"russian_name" json:"russian_name"`
+	CountryOfOrigin     string         `bson:"country_of_origin" json:"country_of_origin"`
 	History             string         `bson:"history" json:"history"`
 	Tags                []Tag          `bson:"tags" json:"tags"`
 	Tools               []CocktailItem `bson:"tools" json:"tools"`

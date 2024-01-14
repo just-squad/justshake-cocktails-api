@@ -3,6 +3,8 @@
 /.compose
 /.bin
 /cmd/scraper/.inshaker-cache
+/cmd/scraper/html-example
+/config/secret-config.yml
 
 
 ## Ignore Visual Studio temporary files, build results, and

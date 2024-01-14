@@ -34,6 +34,7 @@ type (
 		Id                  uuid.UUID                 `json:"id"`
 		Name                string                    `json:"name"`
 		RussianName         string                    `json:"russian_name"`
+		CountryOfOrigin     string                    `json:"country_of_origin"`
 		History             string                    `json:"history"`
 		Tags                []tagApiResponse          `json:"tags"`
 		Tools               []cocktailItemApiResponse `json:"tools"`
@@ -53,6 +54,7 @@ type (
 	}
 	getByFilterApiRequest struct {
 		Ids        []uuid.UUID `json:"ids"`
+		Names      []string    `json:"names"`
 		Pagination pagination  `json:"pagination"`
 	}
 	pagination struct {
@@ -64,11 +66,12 @@ type (
 		TotalItems int64                  `json:"total-items"`
 	}
 	cocktailResponseItem struct {
-		Id          uuid.UUID        `json:"id"`
-		Name        string           `json:"name"`
-		RussianName string           `json:"russian-name"`
-		History     string           `json:"history"`
-		Tags        []tagApiResponse `json:"tags"`
+		Id              uuid.UUID        `json:"id"`
+		Name            string           `json:"name"`
+		RussianName     string           `json:"russian_name"`
+		CountryOfOrigin string           `json:"country_of_origin"`
+		History         string           `json:"history"`
+		Tags            []tagApiResponse `json:"tags"`
 	}
 )
 
@@ -103,6 +106,7 @@ func (r *cocktailsRoutes) getById(c *gin.Context) {
 		Id:                  cocktail.Id,
 		Name:                cocktail.Name,
 		RussianName:         cocktail.RussianName,
+		CountryOfOrigin:     cocktail.CountryOfOrigin,
 		History:             cocktail.History,
 		Tags:                mapToTagApiResponse(cocktail.Tags),
 		Tools:               mapToCocktailItemApiResponse(cocktail.Tools),
@@ -133,10 +137,12 @@ func (r *cocktailsRoutes) getByFilter(c *gin.Context) {
 
 	cocktails, err := r.c.GetByFilter(
 		c.Request.Context(),
-		use_cases.GetByFilterRequest{Ids: request.Ids, Pagination: models.Pagination{
-			Page:         request.Pagination.Page,
-			ItemsPerPage: request.Pagination.ItemsPerPage,
-		}},
+		use_cases.GetByFilterRequest{Ids: request.Ids,
+			Names: request.Names,
+			Pagination: models.Pagination{
+				Page:         request.Pagination.Page,
+				ItemsPerPage: request.Pagination.ItemsPerPage,
+			}},
 	)
 	if err != nil {
 		r.l.Error(err, "http - v1 - doTranslate")

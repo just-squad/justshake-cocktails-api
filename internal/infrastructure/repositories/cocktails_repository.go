@@ -8,15 +8,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"justshake/cocktails/internal/domain/cocktail-aggregate"
+	"justshake/cocktails/internal/domain/models"
 	"justshake/cocktails/pkg/logger"
 	"justshake/cocktails/pkg/mng"
-)
-
-type (
-	CocktailsPaged struct {
-		Items      []cocktail_aggregate.Cocktail
-		TotalCount int64
-	}
 )
 
 type CocktailsRepository struct {
@@ -47,6 +41,62 @@ func (cr *CocktailsRepository) Create(ctx context.Context, entity cocktail_aggre
 	return nil
 }
 
+func (cr *CocktailsRepository) GetNames(ctx context.Context, pagination models.Pagination) (cocktail_aggregate.CocktailsPaged, error) {
+	collection := cr.getCollection()
+
+	findOptions := options.Find()
+	if pagination.Page == 0 && pagination.ItemsPerPage == 0 {
+		findOptions.SetLimit(10)
+	} else {
+		findOptions.SetSkip(pagination.Page * pagination.ItemsPerPage)
+		findOptions.SetLimit(pagination.ItemsPerPage)
+	}
+	queryFilter := bson.M{}
+	// Finding multiple documents returns a cursor
+	cur, err := collection.Find(ctx, queryFilter, findOptions)
+	if err != nil {
+		cr.l.Error(err)
+		return cocktail_aggregate.CocktailsPaged{}, err
+	}
+
+	var results []cocktail_aggregate.Cocktail
+	// Iterate through the cursor
+	for cur.Next(ctx) {
+		elem := struct {
+			Id          uuid.UUID `bson:"id" json:"id"`
+			RussianName string    `bson:"russian_name" json:"russian_name"`
+		}{}
+		err := cur.Decode(&elem)
+		if err != nil {
+			cr.l.Error(err)
+		}
+
+		results = append(results, cocktail_aggregate.Cocktail{Id: elem.Id, RussianName: elem.RussianName})
+	}
+	if err := cur.Err(); err != nil {
+		cr.l.Error(err)
+		return cocktail_aggregate.CocktailsPaged{}, err
+	}
+
+	// Close the cursor once finished
+	err = cur.Close(ctx)
+	if err != nil {
+		cr.l.Error(err)
+		return cocktail_aggregate.CocktailsPaged{}, err
+	}
+
+	count, err := collection.CountDocuments(ctx, queryFilter)
+	if err != nil {
+		cr.l.Error(err)
+		return cocktail_aggregate.CocktailsPaged{}, err
+	}
+
+	return cocktail_aggregate.CocktailsPaged{
+		Items:      results,
+		TotalCount: count,
+	}, nil
+}
+
 func (cr *CocktailsRepository) GetById(ctx context.Context, id uuid.UUID) (cocktail_aggregate.Cocktail, error) {
 	collection := cr.getCollection()
 
@@ -64,7 +114,7 @@ func (cr *CocktailsRepository) GetById(ctx context.Context, id uuid.UUID) (cockt
 	return result, nil
 }
 
-func (cr *CocktailsRepository) GetByFilter(ctx context.Context, filter cocktail_aggregate.CocktailFilter) (CocktailsPaged, error) {
+func (cr *CocktailsRepository) GetByFilter(ctx context.Context, filter cocktail_aggregate.CocktailFilter) (cocktail_aggregate.CocktailsPaged, error) {
 	collection := cr.getCollection()
 
 	findOptions := options.Find()
@@ -74,14 +124,31 @@ func (cr *CocktailsRepository) GetByFilter(ctx context.Context, filter cocktail_
 		findOptions.SetSkip(filter.Pagination.Page * filter.Pagination.ItemsPerPage)
 		findOptions.SetLimit(filter.Pagination.ItemsPerPage)
 	}
-	queryFilter := bson.M{}
+	queryFilterIds := bson.M{}
 	if len(filter.Ids) > 0 {
 		f := bson.A{}
 		for _, id := range filter.Ids {
 			f = append(f, bson.M{"id": id})
 		}
-		queryFilter["$or"] = f
+		queryFilterIds["$or"] = f
 	}
+	queryFilterNames := bson.M{}
+	if len(filter.Names) > 0 {
+		f := bson.A{}
+		for _, name := range filter.Names {
+			f = append(f, bson.D{{"name", name}})
+		}
+		queryFilterNames["$or"] = f
+	}
+	queryFilter := bson.M{}
+	f := bson.A{}
+	if len(queryFilterIds) > 0 {
+		f = append(f, queryFilterIds)
+	}
+	if len(queryFilterNames) > 0 {
+		f = append(f, queryFilterNames)
+	}
+	queryFilter["$and"] = f
 
 	var results []cocktail_aggregate.Cocktail
 
@@ -89,7 +156,7 @@ func (cr *CocktailsRepository) GetByFilter(ctx context.Context, filter cocktail_
 	cur, err := collection.Find(ctx, queryFilter, findOptions)
 	if err != nil {
 		cr.l.Error(err)
-		return CocktailsPaged{}, err
+		return cocktail_aggregate.CocktailsPaged{}, err
 	}
 
 	// Iterate through the cursor
@@ -105,25 +172,25 @@ func (cr *CocktailsRepository) GetByFilter(ctx context.Context, filter cocktail_
 
 	if err := cur.Err(); err != nil {
 		cr.l.Error(err)
-		return CocktailsPaged{}, err
+		return cocktail_aggregate.CocktailsPaged{}, err
 	}
 
 	// Close the cursor once finished
 	err = cur.Close(ctx)
 	if err != nil {
 		cr.l.Error(err)
-		return CocktailsPaged{}, err
+		return cocktail_aggregate.CocktailsPaged{}, err
 	}
 
 	count, err := collection.CountDocuments(ctx, queryFilter)
 	if err != nil {
 		cr.l.Error(err)
-		return CocktailsPaged{}, err
+		return cocktail_aggregate.CocktailsPaged{}, err
 	}
 
 	fmt.Printf("Found multiple documents : %+v elements\n", len(results))
 
-	return CocktailsPaged{
+	return cocktail_aggregate.CocktailsPaged{
 		Items:      results,
 		TotalCount: count,
 	}, nil

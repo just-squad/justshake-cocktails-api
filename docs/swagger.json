@@ -103,6 +103,9 @@
                         "$ref": "#/definitions/v1.cocktailItemApiResponse"
                     }
                 },
+                "country_of_origin": {
+                    "type": "string"
+                },
                 "history": {
                     "type": "string"
                 },
@@ -138,9 +141,6 @@
                 "count": {
                     "type": "integer"
                 },
-                "id": {
-                    "type": "integer"
-                },
                 "name": {
                     "type": "string"
                 },
@@ -152,6 +152,9 @@
         "v1.cocktailResponseItem": {
             "type": "object",
             "properties": {
+                "country_of_origin": {
+                    "type": "string"
+                },
                 "history": {
                     "type": "string"
                 },
@@ -161,7 +164,7 @@
                 "name": {
                     "type": "string"
                 },
-                "russian-name": {
+                "russian_name": {
                     "type": "string"
                 },
                 "tags": {
@@ -181,6 +184,12 @@
                         "type": "string"
                     }
                 },
+                "names": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "pagination": {
                     "$ref": "#/definitions/v1.pagination"
                 }
@@ -194,9 +203,6 @@
                     "items": {
                         "$ref": "#/definitions/v1.cocktailResponseItem"
                     }
-                },
-                "page": {
-                    "type": "integer"
                 },
                 "total-items": {
                     "type": "integer"

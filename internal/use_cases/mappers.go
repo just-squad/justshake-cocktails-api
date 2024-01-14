@@ -1,6 +1,8 @@
 package use_cases
 
-import cocktail_aggregate "justshake/cocktails/internal/domain/cocktail-aggregate"
+import (
+	cocktail_aggregate "justshake/cocktails/internal/domain/cocktail-aggregate"
+)
 
 func mapToTagResponseItem(items []cocktail_aggregate.Tag) []TagResponseItem {
 	result := make([]TagResponseItem, len(items))
@@ -28,11 +30,12 @@ func mapToCocktailResponseItem(items []cocktail_aggregate.Cocktail) []CocktailRe
 	result := make([]CocktailResponseItem, len(items))
 	for i, item := range items {
 		result[i] = CocktailResponseItem{
-			Id:          item.Id,
-			Name:        item.Name,
-			RussianName: item.RussianName,
-			History:     item.History,
-			Tags:        mapToTagResponseItem(item.Tags),
+			Id:              item.Id,
+			Name:            item.Name,
+			RussianName:     item.RussianName,
+			CountryOfOrigin: item.CountryOfOrigin,
+			History:         item.History,
+			Tags:            mapToTagResponseItem(item.Tags),
 		}
 	}
 	return result

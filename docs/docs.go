@@ -114,6 +114,9 @@ const docTemplate = `{
                         "$ref": "#/definitions/v1.cocktailItemApiResponse"
                     }
                 },
+                "country_of_origin": {
+                    "type": "string"
+                },
                 "history": {
                     "type": "string"
                 },
@@ -149,9 +152,6 @@ const docTemplate = `{
                 "count": {
                     "type": "integer"
                 },
-                "id": {
-                    "type": "integer"
-                },
                 "name": {
                     "type": "string"
                 },
@@ -163,6 +163,9 @@ const docTemplate = `{
         "v1.cocktailResponseItem": {
             "type": "object",
             "properties": {
+                "country_of_origin": {
+                    "type": "string"
+                },
                 "history": {
                     "type": "string"
                 },
@@ -172,7 +175,7 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
-                "russian-name": {
+                "russian_name": {
                     "type": "string"
                 },
                 "tags": {
@@ -192,6 +195,12 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
+                "names": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "pagination": {
                     "$ref": "#/definitions/v1.pagination"
                 }
@@ -205,9 +214,6 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/v1.cocktailResponseItem"
                     }
-                },
-                "page": {
-                    "type": "integer"
                 },
                 "total-items": {
                     "type": "integer"
