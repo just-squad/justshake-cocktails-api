@@ -148,7 +148,9 @@ func (cr *CocktailsRepository) GetByFilter(ctx context.Context, filter cocktail_
 	if len(queryFilterNames) > 0 {
 		f = append(f, queryFilterNames)
 	}
-	queryFilter["$and"] = f
+	if len(f) > 0 {
+		queryFilter["$and"] = f
+	}
 
 	var results []cocktail_aggregate.Cocktail
 
