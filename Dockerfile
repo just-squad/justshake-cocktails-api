@@ -33,7 +33,6 @@ WORKDIR /app
 
 COPY --from=builder /app/js-cocktails /app/js-cocktails
 COPY --from=builder /build/config/config.yml /app/config/config.yml
-COPY --from=builder /build/config/secret-config.yml /app/config/secret-config.yml
 
 # Run
 CMD ["./js-cocktails"]
