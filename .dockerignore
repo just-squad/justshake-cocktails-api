@@ -1,0 +1,9 @@
+/.compose
+/.idea
+/docker-compose.yml
+/Dockerfile
+/README.md
+/LICENSE
+/tests
+/.gitignore
+/cmd/scraper

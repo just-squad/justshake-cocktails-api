@@ -1,0 +1,171 @@
+definitions:
+  v1.cocktailApiResponse:
+    properties:
+      composition_elements:
+        items:
+          $ref: '#/definitions/v1.cocktailItemApiResponse'
+        type: array
+      country_of_origin:
+        type: string
+      history:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      recipe:
+        $ref: '#/definitions/v1.recipeApiResponse'
+      russian_name:
+        type: string
+      tags:
+        items:
+          $ref: '#/definitions/v1.tagApiResponse'
+        type: array
+      tools:
+        items:
+          $ref: '#/definitions/v1.cocktailItemApiResponse'
+        type: array
+    type: object
+  v1.cocktailItemApiResponse:
+    properties:
+      count:
+        type: integer
+      name:
+        type: string
+      unit:
+        type: string
+    type: object
+  v1.cocktailResponseItem:
+    properties:
+      country_of_origin:
+        type: string
+      history:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      russian_name:
+        type: string
+      tags:
+        items:
+          $ref: '#/definitions/v1.tagApiResponse'
+        type: array
+    type: object
+  v1.getByFilterApiRequest:
+    properties:
+      ids:
+        items:
+          type: string
+        type: array
+      names:
+        items:
+          type: string
+        type: array
+      pagination:
+        $ref: '#/definitions/v1.pagination'
+    type: object
+  v1.getByFilterApiResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/v1.cocktailResponseItem'
+        type: array
+      total-items:
+        type: integer
+    type: object
+  v1.getByIdApiRequest:
+    properties:
+      id:
+        example: 836e6133-6683-4cf9-b7e2-ef8cb4bf44a7
+        type: string
+    required:
+    - id
+    type: object
+  v1.pagination:
+    properties:
+      items_per_page:
+        type: integer
+      page:
+        type: integer
+    type: object
+  v1.recipeApiResponse:
+    properties:
+      steps:
+        items:
+          type: string
+        type: array
+    type: object
+  v1.response:
+    properties:
+      error:
+        example: message
+        type: string
+    type: object
+  v1.tagApiResponse:
+    properties:
+      name:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /v1/cocktails/get-by-filter:
+    post:
+      consumes:
+      - application/json
+      description: Получение списка коктейлей по фильтру
+      operationId: getByFilter
+      parameters:
+      - description: Фильтр для получения списка коктейлей
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/v1.getByFilterApiRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.getByFilterApiResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.response'
+      summary: Получение списка коктейлей по фильтру
+      tags:
+      - cocktails
+  /v1/cocktails/get-by-id:
+    post:
+      consumes:
+      - application/json
+      description: Получить информацию о коктейле
+      operationId: get-by-id
+      parameters:
+      - description: Параметр содержащий идентификатор коктейля
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/v1.getByIdApiRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.cocktailApiResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.response'
+      summary: Получение информации о коктейле по идентификатору
+      tags:
+      - cocktails
+swagger: "2.0"
