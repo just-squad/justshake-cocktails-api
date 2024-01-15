@@ -4,14 +4,14 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: justshake-cocktails-web:latest
+    image: justshake-cocktails-web:1.0.0
     container_name: justshake-cocktails-web
     ports:
       - "2000:80"
     depends_on:
       - justshake-cocktails-db
     volumes:
-      - ./justshake-cocktails-web/secret-config.yml:/config/secret-config.yml
+      - ./.compose/justshake-cocktails-web/secret-config.yml:/app/config/secret-config.yml
     environment:
       - HTTP_PORT=80
       - MONGO_CONNECTION_STRING=mongodb://justshake-cocktails-db:27017

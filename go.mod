@@ -13,7 +13,6 @@ require (
 	github.com/swaggo/gin-swagger v1.6.0
 	github.com/swaggo/swag v1.16.2
 	go.mongodb.org/mongo-driver v1.13.1
-	gopkg.in/errgo.v2 v2.1.0
 	gopkg.in/telebot.v3 v3.2.1
 )
 

@@ -39,7 +39,7 @@ type (
 	}
 
 	Tg struct {
-		Token string `env-required:"true" yaml:"token" env:"TG_BOT_TOKEN"`
+		Token string `yaml:"token" env:"TG_BOT_TOKEN"`
 	}
 )
 
@@ -48,7 +48,7 @@ func NewConfig() (*Config, error) {
 	cfg := &Config{}
 
 	var err error
-	if _, err := os.Stat("./config/secret-config.yml"); err == nil {
+	if _, err := os.Stat("./config/config.yml"); err == nil {
 		err := cleanenv.ReadConfig("./config/config.yml", cfg)
 		if err != nil {
 			return nil, fmt.Errorf("config error: %w", err)
@@ -58,13 +58,13 @@ func NewConfig() (*Config, error) {
 	if _, err := os.Stat("./config/secret-config.yml"); err == nil {
 		err = cleanenv.ReadConfig("./config/secret-config.yml", cfg)
 		if err != nil {
-			return nil, fmt.Errorf("config error: %w", err)
+			return nil, fmt.Errorf("secret config error: %w", err)
 		}
 	}
 
 	err = cleanenv.ReadEnv(cfg)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("environment config error: %w", err)
 	}
 
 	return cfg, nil
