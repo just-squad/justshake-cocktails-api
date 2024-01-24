@@ -144,7 +144,7 @@ func (cr *CocktailsRepository) GetByFilter(ctx context.Context, filter cocktail_
 	if len(filter.RussianNames) > 0 {
 		f := bson.A{}
 		for _, name := range filter.RussianNames {
-			f = append(f, bson.D{{"russian_name", name}})
+			f = append(f, bson.D{{Key: "russian_name", Value: name}})
 		}
 		queryFilterNames["$or"] = f
 	}

@@ -232,7 +232,6 @@ func (tgb *telegramBot) startBot() {
 		default:
 			return c.Send(errorReturnMessage)
 		}
-		return c.Send(errorReturnMessage)
 	})
 
 	tgb.log.Info("Запускаем бота\n")
