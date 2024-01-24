@@ -57,9 +57,10 @@ func (uc *CocktailsUseCase) GetById(ctx context.Context, request GetByIdRequest)
 
 func (uc *CocktailsUseCase) GetByFilter(ctx context.Context, req GetByFilterRequest) (GetByFilterResponse, error) {
 	result, err := uc.cocktailsRepo.GetByFilter(ctx, cocktail_aggregate.CocktailFilter{
-		Ids:        req.Ids,
-		Names:      req.Names,
-		Pagination: req.Pagination,
+		Ids:          req.Ids,
+		Names:        req.Names,
+		RussianNames: req.RussianNames,
+		Pagination:   req.Pagination,
 	})
 
 	if err != nil {

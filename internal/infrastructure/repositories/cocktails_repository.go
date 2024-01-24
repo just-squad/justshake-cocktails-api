@@ -140,6 +140,14 @@ func (cr *CocktailsRepository) GetByFilter(ctx context.Context, filter cocktail_
 		}
 		queryFilterNames["$or"] = f
 	}
+	queryFilterRussianNames := bson.M{}
+	if len(filter.RussianNames) > 0 {
+		f := bson.A{}
+		for _, name := range filter.RussianNames {
+			f = append(f, bson.D{{"russian_name", name}})
+		}
+		queryFilterNames["$or"] = f
+	}
 	queryFilter := bson.M{}
 	f := bson.A{}
 	if len(queryFilterIds) > 0 {
@@ -147,6 +155,9 @@ func (cr *CocktailsRepository) GetByFilter(ctx context.Context, filter cocktail_
 	}
 	if len(queryFilterNames) > 0 {
 		f = append(f, queryFilterNames)
+	}
+	if len(queryFilterRussianNames) > 0 {
+		f = append(f, queryFilterRussianNames)
 	}
 	if len(f) > 0 {
 		queryFilter["$and"] = f
