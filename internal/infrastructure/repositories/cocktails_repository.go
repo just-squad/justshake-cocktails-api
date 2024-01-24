@@ -101,7 +101,7 @@ func (cr *CocktailsRepository) GetById(ctx context.Context, id uuid.UUID) (cockt
 	collection := cr.getCollection()
 
 	var result cocktail_aggregate.Cocktail
-	filter := bson.D{{"id", id}}
+	filter := bson.D{{Key: "id", Value: id}}
 
 	err := collection.FindOne(ctx, filter).Decode(&result)
 	if err != nil {
@@ -136,7 +136,7 @@ func (cr *CocktailsRepository) GetByFilter(ctx context.Context, filter cocktail_
 	if len(filter.Names) > 0 {
 		f := bson.A{}
 		for _, name := range filter.Names {
-			f = append(f, bson.D{{"name", name}})
+			f = append(f, bson.D{{Key: "name", Value: name}})
 		}
 		queryFilterNames["$or"] = f
 	}
