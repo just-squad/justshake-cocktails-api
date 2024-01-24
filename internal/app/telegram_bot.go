@@ -3,7 +3,10 @@ package app
 import (
 	"context"
 	"fmt"
+	"github.com/eko/gocache/lib/v4/cache"
+	"github.com/eko/gocache/store/go_cache/v4"
 	"github.com/google/uuid"
+	gocache "github.com/patrickmn/go-cache"
 	tele "gopkg.in/telebot.v3"
 	"justshake/cocktails/config"
 	"justshake/cocktails/internal/domain/models"
@@ -26,11 +29,12 @@ type telegramBot struct {
 // Управляющие кнопки (buttons)
 var (
 	// Main menu
-	mainMenuPage  = &tele.ReplyMarkup{}
-	cocktailPage  = &tele.ReplyMarkup{}
-	selectPageBtn = tele.InlineButton{Unique: "selectpage"}
-	cocktailBtn   = cocktailPage.Data("", "cocktail")
-	cocktailsBtn  = mainMenuPage.Data("Список коктейлей", "cocktails", "0")
+	mainMenuPage    = &tele.ReplyMarkup{}
+	cocktailPage    = &tele.ReplyMarkup{}
+	selectPageBtn   = tele.InlineButton{Unique: "selectpage"}
+	cocktailBtn     = cocktailPage.Data("", "cocktail")
+	cocktailsBtn    = mainMenuPage.Data("📋 Список коктейлей", "cocktails", "0")
+	searchByNameBtn = mainMenuPage.Data("🔎 Поиск по названию", "searchbyname")
 )
 
 func newBot(
@@ -59,6 +63,8 @@ func (tgb *telegramBot) startBot() {
 		tgb.log.Fatal(err)
 		return
 	}
+	inMemoryCache := configureMemoryCache()
+	mainMenuPage.Inline(mainMenuPage.Row(cocktailsBtn), mainMenuPage.Row(searchByNameBtn))
 
 	tgb.log.Info("Регистрируем команды\n")
 
@@ -67,7 +73,6 @@ func (tgb *telegramBot) startBot() {
 	})
 
 	tgb.botInstance.Handle("/menu", func(c tele.Context) error {
-		mainMenuPage.Inline(mainMenuPage.Row(cocktailsBtn))
 		return c.Send("Основное меню", mainMenuPage)
 	})
 
@@ -124,8 +129,7 @@ func (tgb *telegramBot) startBot() {
 				}})
 		}
 
-		err = c.Delete()
-		return c.Send("Коктели:", cocktailsList)
+		return c.EditOrSend("Коктели:", cocktailsList)
 	})
 
 	tgb.botInstance.Handle(&cocktailBtn, func(c tele.Context) error {
@@ -155,11 +159,7 @@ func (tgb *telegramBot) startBot() {
 			resultString = resultString + fmt.Sprintf("#%+v ", element.Name)
 		}
 
-		err = c.Delete()
-		if err != nil {
-			return err
-		}
-		return c.Send(resultString, &tele.SendOptions{ParseMode: tele.ModeHTML})
+		return c.EditOrSend(resultString, &tele.SendOptions{ParseMode: tele.ModeHTML})
 	})
 
 	tgb.botInstance.Handle(&selectPageBtn, func(c tele.Context) error {
@@ -184,8 +184,55 @@ func (tgb *telegramBot) startBot() {
 			result.InlineKeyboard = append(result.InlineKeyboard, localPages)
 			localPages = []tele.InlineButton{}
 		}
-		err = c.Delete()
-		return c.Send("Доступные страницы:", result)
+
+		return c.EditOrSend("Доступные страницы:", result)
+	})
+
+	tgb.botInstance.Handle(&searchByNameBtn, func(c tele.Context) error {
+		inMemoryCache.Set(context.TODO(), strconv.FormatInt(c.Update().Callback.Sender.ID, 10), []byte("searchbyname"))
+		return c.EditOrSend("Введите часть названия или полное название для поиска", &tele.ReplyMarkup{
+			Placeholder: "Параметры поиска",
+		})
+	})
+
+	tgb.botInstance.Handle(tele.OnText, func(c tele.Context) error {
+		errorReturnMessage := "Я не могу распознать вашу команду. Введите /menu для перемещения в главное меню"
+		cachedValue, err := inMemoryCache.Get(context.TODO(), strconv.FormatInt(c.Sender().ID, 10))
+		if err != nil {
+			tgb.log.Error(err)
+			return c.Send(errorReturnMessage)
+		}
+
+		switch string(cachedValue) {
+		case "searchbyname":
+			res, err := tgb.Cocktails.GetByFilter(context.TODO(), use_cases.GetByFilterRequest{
+				RussianNames: []string{c.Text()},
+				Pagination: models.Pagination{
+					Page:         0,
+					ItemsPerPage: 100,
+				},
+			})
+			if err != nil {
+				tgb.log.Error(err)
+				return c.Send(errorReturnMessage)
+			}
+			var cocktailsList = &tele.ReplyMarkup{}
+			for _, it := range res.Items {
+				cocktailsList.InlineKeyboard = append(cocktailsList.InlineKeyboard, []tele.InlineButton{
+					{
+						Unique: cocktailBtn.Unique,
+						Text:   it.RussianName,
+						Data:   it.Id.String(),
+					},
+				})
+			}
+
+			return c.EditOrSend("Найденные коктели:", cocktailsList)
+
+		default:
+			return c.Send(errorReturnMessage)
+		}
+		return c.Send(errorReturnMessage)
 	})
 
 	tgb.log.Info("Запускаем бота\n")
@@ -201,4 +248,11 @@ func getPagedInlineButton(pageNum int64, itemsPerPage int64, totalItems int64) t
 	selectPageBtn.Data = fmt.Sprintf("%+v", float64(totalItems/itemsPerPage+1))
 	selectPageBtn.Text = fmt.Sprintf("%+v/%+v", pageNum+1, math.Ceil(float64(totalItems/itemsPerPage))+1)
 	return selectPageBtn
+}
+
+func configureMemoryCache() *cache.Cache[[]byte] {
+	gocacheClient := gocache.New(10*time.Minute, 20*time.Minute)
+	gocacheStore := go_cache.NewGoCache(gocacheClient)
+	cacheManager := cache.New[[]byte](gocacheStore)
+	return cacheManager
 }

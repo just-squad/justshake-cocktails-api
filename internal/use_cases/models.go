@@ -22,9 +22,10 @@ type (
 		Recipe              RecipeResponseItem
 	}
 	GetByFilterRequest struct {
-		Ids        []uuid.UUID
-		Names      []string
-		Pagination models.Pagination
+		Ids          []uuid.UUID
+		Names        []string
+		RussianNames []string
+		Pagination   models.Pagination
 	}
 	GetByFilterResponse struct {
 		Items      []CocktailResponseItem
