@@ -14,6 +14,7 @@ import (
 	"justshake/cocktails/pkg/logger"
 	"math"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -26,15 +27,31 @@ type telegramBot struct {
 	use_cases.Cocktails
 }
 
+type PreviousPage int
+
+const (
+	MainMenu      PreviousPage = 0
+	CocktailsList              = 1
+	Search                     = 2
+)
+
+type cocktailButtonRequest struct {
+	Id           uuid.UUID    `json:"i"`
+	PreviousPage PreviousPage `json:"p"`
+	PreviousData string       `json:"d"`
+}
+
 // Управляющие кнопки (buttons)
 var (
 	// Main menu
-	mainMenuPage    = &tele.ReplyMarkup{}
-	cocktailPage    = &tele.ReplyMarkup{}
-	selectPageBtn   = tele.InlineButton{Unique: "selectpage"}
-	cocktailBtn     = cocktailPage.Data("", "cocktail")
-	cocktailsBtn    = mainMenuPage.Data("📋 Список коктейлей", "cocktails", "0")
-	searchByNameBtn = mainMenuPage.Data("🔎 Поиск по названию", "searchbyname")
+	mainMenuPage           = &tele.ReplyMarkup{}
+	cocktailPage           = &tele.ReplyMarkup{}
+	selectPageBtn          = tele.InlineButton{Unique: "selectpage"}
+	cocktailBtn            = cocktailPage.Data("", "cocktail")
+	cocktailsBtn           = mainMenuPage.Data("📋 Список коктейлей", "cocktails", "0")
+	searchByNameBtn        = mainMenuPage.Data("🔎 Поиск по названию", "searchbyname")
+	mainMenuBtn            = mainMenuPage.Data("", "mainmenu")
+	searchByNameProcessBtn = mainMenuPage.Data("", "searchbynameprocess")
 )
 
 func newBot(
@@ -71,10 +88,8 @@ func (tgb *telegramBot) startBot() {
 	tgb.botInstance.Handle("/start", func(c tele.Context) error {
 		return c.Send("Вас приветствует JustShake бот, который вам поможет найти самый вкусный и классный коктель, который вы пробовали", mainMenuPage)
 	})
-
-	tgb.botInstance.Handle("/menu", func(c tele.Context) error {
-		return c.Send("Основное меню", mainMenuPage)
-	})
+	tgb.botInstance.Handle("/menu", tgb.showMainMenu)
+	tgb.botInstance.Handle(&mainMenuBtn, tgb.showMainMenu)
 
 	tgb.botInstance.Handle(&cocktailsBtn, func(c tele.Context) error {
 		parsedPage, err := strconv.ParseInt(c.Update().Callback.Data, 10, 64)
@@ -91,11 +106,16 @@ func (tgb *telegramBot) startBot() {
 		}
 		var cocktailsList = &tele.ReplyMarkup{}
 		for _, it := range res.Items {
+			prepareData := cocktailButtonRequest{
+				Id:           it.Id,
+				PreviousPage: CocktailsList,
+				PreviousData: strconv.FormatInt(parsedPage, 10),
+			}
 			cocktailsList.InlineKeyboard = append(cocktailsList.InlineKeyboard, []tele.InlineButton{
 				{
 					Unique: cocktailBtn.Unique,
 					Text:   it.Name,
-					Data:   it.Id.String(),
+					Data:   fmt.Sprintf("%+v %+v %+v", prepareData.Id, prepareData.PreviousPage, prepareData.PreviousData),
 				},
 			})
 		}
@@ -128,13 +148,23 @@ func (tgb *telegramBot) startBot() {
 					Data:   strconv.FormatInt(parsedPage+1, 10),
 				}})
 		}
+		cocktailsList.InlineKeyboard = append(cocktailsList.InlineKeyboard, []tele.InlineButton{{Text: "👈 Назад", Unique: mainMenuBtn.Unique}})
 
 		return c.EditOrSend("Коктели:", cocktailsList)
 	})
 
 	tgb.botInstance.Handle(&cocktailBtn, func(c tele.Context) error {
-		uuid, _ := uuid.Parse(c.Update().Callback.Data)
-		res, err := tgb.Cocktails.GetById(context.TODO(), use_cases.GetByIdRequest{Id: uuid})
+		var request cocktailButtonRequest
+		data := strings.Split(c.Update().Callback.Data, " ")
+		id, _ := uuid.Parse(data[0])
+		request.Id = id
+		prevPage, _ := strconv.Atoi(data[1])
+		request.PreviousPage = PreviousPage(prevPage)
+		if len(data) == 3 {
+			request.PreviousData = data[2]
+		}
+
+		res, err := tgb.Cocktails.GetById(context.TODO(), use_cases.GetByIdRequest{Id: request.Id})
 		if err != nil {
 			tgb.log.Error(err)
 		}
@@ -159,7 +189,18 @@ func (tgb *telegramBot) startBot() {
 			resultString = resultString + fmt.Sprintf("#%+v ", element.Name)
 		}
 
-		return c.EditOrSend(resultString, &tele.SendOptions{ParseMode: tele.ModeHTML})
+		inlineButtons := &tele.ReplyMarkup{}
+		var buttonName string
+		if request.PreviousPage == CocktailsList {
+			buttonName = cocktailsBtn.Unique
+		} else if request.PreviousPage == MainMenu {
+			buttonName = mainMenuBtn.Unique
+		} else if request.PreviousPage == Search {
+			buttonName = searchByNameProcessBtn.Unique
+		}
+		returnBtn := inlineButtons.Data("👈 Назад", buttonName, request.PreviousData)
+		inlineButtons.Inline(tele.Row{returnBtn})
+		return c.EditOrSend(resultString, &tele.SendOptions{ParseMode: tele.ModeHTML}, inlineButtons)
 	})
 
 	tgb.botInstance.Handle(&selectPageBtn, func(c tele.Context) error {
@@ -189,10 +230,18 @@ func (tgb *telegramBot) startBot() {
 	})
 
 	tgb.botInstance.Handle(&searchByNameBtn, func(c tele.Context) error {
-		inMemoryCache.Set(context.TODO(), strconv.FormatInt(c.Update().Callback.Sender.ID, 10), []byte("searchbyname"))
+		err := inMemoryCache.Set(context.TODO(), strconv.FormatInt(c.Update().Callback.Sender.ID, 10), []byte(searchByNameBtn.Unique))
+		if err != nil {
+			return err
+		}
 		return c.EditOrSend("Введите часть названия или полное название для поиска", &tele.ReplyMarkup{
 			Placeholder: "Параметры поиска",
 		})
+	})
+
+	tgb.botInstance.Handle(&searchByNameProcessBtn, func(c tele.Context) error {
+		errorReturnMessage := "Я не могу распознать вашу команду. Введите /menu для перемещения в главное меню"
+		return tgb.searchByName(errorReturnMessage, c)
 	})
 
 	tgb.botInstance.Handle(tele.OnText, func(c tele.Context) error {
@@ -205,30 +254,7 @@ func (tgb *telegramBot) startBot() {
 
 		switch string(cachedValue) {
 		case "searchbyname":
-			res, err := tgb.Cocktails.GetByFilter(context.TODO(), use_cases.GetByFilterRequest{
-				RussianNames: []string{c.Text()},
-				Pagination: models.Pagination{
-					Page:         0,
-					ItemsPerPage: 100,
-				},
-			})
-			if err != nil {
-				tgb.log.Error(err)
-				return c.Send(errorReturnMessage)
-			}
-			var cocktailsList = &tele.ReplyMarkup{}
-			for _, it := range res.Items {
-				cocktailsList.InlineKeyboard = append(cocktailsList.InlineKeyboard, []tele.InlineButton{
-					{
-						Unique: cocktailBtn.Unique,
-						Text:   it.RussianName,
-						Data:   it.Id.String(),
-					},
-				})
-			}
-
-			return c.EditOrSend("Найденные коктели:", cocktailsList)
-
+			return tgb.searchByName(errorReturnMessage, c)
 		default:
 			return c.Send(errorReturnMessage)
 		}
@@ -254,4 +280,52 @@ func configureMemoryCache() *cache.Cache[[]byte] {
 	gocacheStore := go_cache.NewGoCache(gocacheClient)
 	cacheManager := cache.New[[]byte](gocacheStore)
 	return cacheManager
+}
+
+func (tgb *telegramBot) showMainMenu(c tele.Context) error {
+	return c.EditOrSend("Основное меню:", mainMenuPage)
+}
+
+func (tgb *telegramBot) searchByName(errorReturnMessage string, c tele.Context) error {
+	var searchText string
+	if c.Data() != "" {
+		searchText = c.Data()
+	} else if c.Text() != "" {
+		searchText = c.Text()
+	}
+	res, err := tgb.Cocktails.GetByFilter(context.TODO(), use_cases.GetByFilterRequest{
+		RussianNames: []string{searchText},
+		Names:        []string{searchText},
+		Pagination: models.Pagination{
+			Page:         0,
+			ItemsPerPage: 100,
+		},
+	})
+	if err != nil {
+		tgb.log.Error(err)
+		return c.Send(errorReturnMessage)
+	}
+	var cocktailsList = &tele.ReplyMarkup{}
+	for _, it := range res.Items {
+		prepareData := cocktailButtonRequest{
+			Id:           it.Id,
+			PreviousPage: Search,
+			PreviousData: searchText,
+		}
+		cocktailsList.InlineKeyboard = append(cocktailsList.InlineKeyboard, []tele.InlineButton{
+			{
+				Unique: cocktailBtn.Unique,
+				Text:   it.RussianName,
+				Data:   fmt.Sprintf("%+v %+v %+v", prepareData.Id, prepareData.PreviousPage, prepareData.PreviousData),
+			},
+		})
+	}
+	cocktailsList.InlineKeyboard = append(cocktailsList.InlineKeyboard, []tele.InlineButton{
+		{
+			Unique: mainMenuBtn.Unique,
+			Text:   "👈 Назад",
+		},
+	})
+
+	return c.EditOrSend("Найденные коктели:", cocktailsList)
 }
