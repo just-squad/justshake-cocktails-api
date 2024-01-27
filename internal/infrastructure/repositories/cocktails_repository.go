@@ -19,7 +19,7 @@ type CocktailsRepository struct {
 	l     logger.Interface
 }
 
-func New(mongo *mng.Connection, l logger.Interface) *CocktailsRepository {
+func NewCocktailsRepository(mongo *mng.Connection, l logger.Interface) *CocktailsRepository {
 	return &CocktailsRepository{mongo: mongo, l: l}
 }
 

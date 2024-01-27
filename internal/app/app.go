@@ -30,7 +30,7 @@ func Run(cfg *config.Config) {
 	defer mongo.Close()
 
 	// Use case
-	cocktailsUseCase := use_cases.New(repositories.New(mongo, l))
+	cocktailsUseCase := use_cases.New(repositories.NewCocktailsRepository(mongo, l))
 
 	// Старт телеграм бота
 	tgb, err := newBot(cfg,

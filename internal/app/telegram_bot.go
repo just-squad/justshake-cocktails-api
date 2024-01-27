@@ -11,6 +11,7 @@ import (
 	"justshake/cocktails/config"
 	"justshake/cocktails/internal/domain/models"
 	"justshake/cocktails/internal/use_cases"
+	"justshake/cocktails/internal/use_cases/cocktails"
 	"justshake/cocktails/pkg/logger"
 	"math"
 	"strconv"
@@ -24,7 +25,7 @@ type telegramBot struct {
 	log         logger.Interface
 	stopSignal  chan bool
 	botInstance *tele.Bot
-	use_cases.Cocktails
+	cocktails.Cocktails
 }
 
 type PreviousPage int
@@ -97,7 +98,7 @@ func (tgb *telegramBot) startBot() {
 			tgb.log.Error(err)
 		}
 		itemsPerPage := int64(10)
-		res, err := tgb.Cocktails.GetNames(context.TODO(), use_cases.GetNamesRequest{Pagination: models.Pagination{
+		res, err := tgb.Cocktails.GetNames(context.TODO(), cocktails.GetNamesRequest{Pagination: models.Pagination{
 			Page:         parsedPage,
 			ItemsPerPage: itemsPerPage,
 		}})
@@ -164,7 +165,7 @@ func (tgb *telegramBot) startBot() {
 			request.PreviousData = data[2]
 		}
 
-		res, err := tgb.Cocktails.GetById(context.TODO(), use_cases.GetByIdRequest{Id: request.Id})
+		res, err := tgb.Cocktails.GetById(context.TODO(), cocktails.GetByIdRequest{Id: request.Id})
 		if err != nil {
 			tgb.log.Error(err)
 		}
@@ -293,7 +294,7 @@ func (tgb *telegramBot) searchByName(errorReturnMessage string, c tele.Context) 
 	} else if c.Text() != "" {
 		searchText = c.Text()
 	}
-	res, err := tgb.Cocktails.GetByFilter(context.TODO(), use_cases.GetByFilterRequest{
+	res, err := tgb.Cocktails.GetByFilter(context.TODO(), cocktails.GetByFilterRequest{
 		RussianNames: []string{searchText},
 		Names:        []string{searchText},
 		Pagination: models.Pagination{

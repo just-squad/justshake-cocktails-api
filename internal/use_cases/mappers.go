@@ -2,22 +2,23 @@ package use_cases
 
 import (
 	cocktail_aggregate "justshake/cocktails/internal/domain/cocktail-aggregate"
+	"justshake/cocktails/internal/use_cases/cocktails"
 )
 
-func mapToTagResponseItem(items []cocktail_aggregate.Tag) []TagResponseItem {
-	result := make([]TagResponseItem, len(items))
+func mapToTagResponseItem(items []cocktail_aggregate.Tag) []cocktails.TagResponseItem {
+	result := make([]cocktails.TagResponseItem, len(items))
 	for i, item := range items {
-		result[i] = TagResponseItem{
+		result[i] = cocktails.TagResponseItem{
 			Name: item.Name,
 		}
 	}
 	return result
 }
 
-func mapToCocktailsItemResponseItem(items []cocktail_aggregate.CocktailItem) []CocktailItemResponseItem {
-	result := make([]CocktailItemResponseItem, len(items))
+func mapToCocktailsItemResponseItem(items []cocktail_aggregate.CocktailItem) []cocktails.CocktailItemResponseItem {
+	result := make([]cocktails.CocktailItemResponseItem, len(items))
 	for i, item := range items {
-		result[i] = CocktailItemResponseItem{
+		result[i] = cocktails.CocktailItemResponseItem{
 			Name:  item.Name,
 			Count: item.Count,
 			Unit:  item.Unit,
@@ -26,10 +27,10 @@ func mapToCocktailsItemResponseItem(items []cocktail_aggregate.CocktailItem) []C
 	return result
 }
 
-func mapToCocktailResponseItem(items []cocktail_aggregate.Cocktail) []CocktailResponseItem {
-	result := make([]CocktailResponseItem, len(items))
+func mapToCocktailResponseItem(items []cocktail_aggregate.Cocktail) []cocktails.CocktailResponseItem {
+	result := make([]cocktails.CocktailResponseItem, len(items))
 	for i, item := range items {
-		result[i] = CocktailResponseItem{
+		result[i] = cocktails.CocktailResponseItem{
 			Id:              item.Id,
 			Name:            item.Name,
 			RussianName:     item.RussianName,
