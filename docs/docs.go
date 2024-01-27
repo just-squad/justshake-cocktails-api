@@ -203,6 +203,12 @@ const docTemplate = `{
                 },
                 "pagination": {
                     "$ref": "#/definitions/v1.pagination"
+                },
+                "russian_names": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"justshake/cocktails/internal/domain/cocktail-aggregate"
@@ -51,6 +52,7 @@ func (cr *CocktailsRepository) GetNames(ctx context.Context, pagination models.P
 		findOptions.SetSkip(pagination.Page * pagination.ItemsPerPage)
 		findOptions.SetLimit(pagination.ItemsPerPage)
 	}
+	findOptions.SetProjection(bson.D{{"id", 1}, {"russian_name", 1}})
 	queryFilter := bson.M{}
 	// Finding multiple documents returns a cursor
 	cur, err := collection.Find(ctx, queryFilter, findOptions)
@@ -132,32 +134,38 @@ func (cr *CocktailsRepository) GetByFilter(ctx context.Context, filter cocktail_
 		}
 		queryFilterIds["$or"] = f
 	}
-	queryFilterNames := bson.M{}
+	queryFilterEnNames := bson.M{}
 	if len(filter.Names) > 0 {
 		f := bson.A{}
 		for _, name := range filter.Names {
-			f = append(f, bson.D{{Key: "name", Value: name}})
+			f = append(f, bson.D{{Key: "name", Value: bson.D{{"$regex", primitive.Regex{Pattern: fmt.Sprintf("[a-zA-Zа-яА-Я0-9 ]*(%+v)[a-zA-Zа-яА-Я0-9 ]*", name), Options: "mi"}}}}})
 		}
-		queryFilterNames["$or"] = f
+		queryFilterEnNames["$or"] = f
 	}
 	queryFilterRussianNames := bson.M{}
 	if len(filter.RussianNames) > 0 {
 		f := bson.A{}
 		for _, name := range filter.RussianNames {
-			f = append(f, bson.D{{Key: "russian_name", Value: name}})
+			f = append(f, bson.D{{Key: "russian_name", Value: bson.D{{"$regex", primitive.Regex{Pattern: fmt.Sprintf("[a-zA-Zа-яА-Я0-9 ]*(%+v)[a-zA-Zа-яА-Я0-9 ]*", name), Options: "mi"}}}}})
 		}
-		queryFilterNames["$or"] = f
+		queryFilterRussianNames["$or"] = f
 	}
 	queryFilter := bson.M{}
 	f := bson.A{}
 	if len(queryFilterIds) > 0 {
 		f = append(f, queryFilterIds)
 	}
-	if len(queryFilterNames) > 0 {
-		f = append(f, queryFilterNames)
+	fNames := bson.A{}
+	if len(queryFilterEnNames) > 0 {
+		fNames = append(fNames, queryFilterEnNames)
 	}
 	if len(queryFilterRussianNames) > 0 {
-		f = append(f, queryFilterRussianNames)
+		fNames = append(fNames, queryFilterRussianNames)
+	}
+	if len(fNames) > 0 {
+		queryFilterNames := bson.M{}
+		queryFilterNames["$or"] = fNames
+		f = append(f, queryFilterNames)
 	}
 	if len(f) > 0 {
 		queryFilter["$and"] = f
