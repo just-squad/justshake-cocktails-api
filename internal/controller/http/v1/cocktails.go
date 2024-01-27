@@ -53,9 +53,10 @@ type (
 		Steps []string `json:"steps"`
 	}
 	getByFilterApiRequest struct {
-		Ids        []uuid.UUID `json:"ids"`
-		Names      []string    `json:"names"`
-		Pagination pagination  `json:"pagination"`
+		Ids          []uuid.UUID `json:"ids"`
+		Names        []string    `json:"names"`
+		RussianNames []string    `json:"russian_names"`
+		Pagination   pagination  `json:"pagination"`
 	}
 	pagination struct {
 		Page         int64 `json:"page"`
@@ -138,7 +139,8 @@ func (r *cocktailsRoutes) getByFilter(c *gin.Context) {
 	cocktails, err := r.c.GetByFilter(
 		c.Request.Context(),
 		use_cases.GetByFilterRequest{Ids: request.Ids,
-			Names: request.Names,
+			Names:        request.Names,
+			RussianNames: request.RussianNames,
 			Pagination: models.Pagination{
 				Page:         request.Pagination.Page,
 				ItemsPerPage: request.Pagination.ItemsPerPage,
