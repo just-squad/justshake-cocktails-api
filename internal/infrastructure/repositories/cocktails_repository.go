@@ -52,7 +52,7 @@ func (cr *CocktailsRepository) GetNames(ctx context.Context, pagination models.P
 		findOptions.SetSkip(pagination.Page * pagination.ItemsPerPage)
 		findOptions.SetLimit(pagination.ItemsPerPage)
 	}
-	findOptions.SetProjection(bson.D{{"id", 1}, {"russian_name", 1}})
+	findOptions.SetProjection(bson.D{{Key: "id", Value: 1}, {Key: "russian_name", Value: 1}})
 	queryFilter := bson.M{}
 	// Finding multiple documents returns a cursor
 	cur, err := collection.Find(ctx, queryFilter, findOptions)
@@ -138,7 +138,7 @@ func (cr *CocktailsRepository) GetByFilter(ctx context.Context, filter cocktail_
 	if len(filter.Names) > 0 {
 		f := bson.A{}
 		for _, name := range filter.Names {
-			f = append(f, bson.D{{Key: "name", Value: bson.D{{"$regex", primitive.Regex{Pattern: fmt.Sprintf("[a-zA-Zа-яА-Я0-9 ]*(%+v)[a-zA-Zа-яА-Я0-9 ]*", name), Options: "mi"}}}}})
+			f = append(f, bson.D{{Key: "name", Value: bson.D{{Key: "$regex", Value: primitive.Regex{Pattern: fmt.Sprintf("[a-zA-Zа-яА-Я0-9 ]*(%+v)[a-zA-Zа-яА-Я0-9 ]*", name), Options: "mi"}}}}})
 		}
 		queryFilterEnNames["$or"] = f
 	}
@@ -146,7 +146,7 @@ func (cr *CocktailsRepository) GetByFilter(ctx context.Context, filter cocktail_
 	if len(filter.RussianNames) > 0 {
 		f := bson.A{}
 		for _, name := range filter.RussianNames {
-			f = append(f, bson.D{{Key: "russian_name", Value: bson.D{{"$regex", primitive.Regex{Pattern: fmt.Sprintf("[a-zA-Zа-яА-Я0-9 ]*(%+v)[a-zA-Zа-яА-Я0-9 ]*", name), Options: "mi"}}}}})
+			f = append(f, bson.D{{Key: "russian_name", Value: bson.D{{Key: "$regex", Value: primitive.Regex{Pattern: fmt.Sprintf("[a-zA-Zа-яА-Я0-9 ]*(%+v)[a-zA-Zа-яА-Я0-9 ]*", name), Options: "mi"}}}}})
 		}
 		queryFilterRussianNames["$or"] = f
 	}
