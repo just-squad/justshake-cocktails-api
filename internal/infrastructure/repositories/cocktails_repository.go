@@ -9,7 +9,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"justshake/cocktails/internal/domain/cocktail-aggregate"
-	"justshake/cocktails/internal/domain/models"
 	"justshake/cocktails/pkg/logger"
 	"justshake/cocktails/pkg/mng"
 )
@@ -42,18 +41,33 @@ func (cr *CocktailsRepository) Create(ctx context.Context, entity cocktail_aggre
 	return nil
 }
 
-func (cr *CocktailsRepository) GetNames(ctx context.Context, pagination models.Pagination) (cocktail_aggregate.CocktailsPaged, error) {
+func (cr *CocktailsRepository) GetNames(ctx context.Context, filter cocktail_aggregate.CocktailNamesFilter) (cocktail_aggregate.CocktailsPaged, error) {
 	collection := cr.getCollection()
 
 	findOptions := options.Find()
-	if pagination.Page == 0 && pagination.ItemsPerPage == 0 {
+	if filter.Pagination.Page == 0 && filter.Pagination.ItemsPerPage == 0 {
 		findOptions.SetLimit(10)
 	} else {
-		findOptions.SetSkip(pagination.Page * pagination.ItemsPerPage)
-		findOptions.SetLimit(pagination.ItemsPerPage)
+		findOptions.SetSkip(filter.Pagination.Page * filter.Pagination.ItemsPerPage)
+		findOptions.SetLimit(filter.Pagination.ItemsPerPage)
 	}
 	findOptions.SetProjection(bson.D{{Key: "id", Value: 1}, {Key: "russian_name", Value: 1}})
 	queryFilter := bson.M{}
+	queryFilterIds := bson.M{}
+	if len(filter.Ids) > 0 {
+		f := bson.A{}
+		for _, id := range filter.Ids {
+			f = append(f, bson.M{"id": id})
+		}
+		queryFilterIds["$or"] = f
+	}
+	f := bson.A{}
+	if len(queryFilterIds) > 0 {
+		f = append(f, queryFilterIds)
+	}
+	if len(f) > 0 {
+		queryFilter["$and"] = f
+	}
 	// Finding multiple documents returns a cursor
 	cur, err := collection.Find(ctx, queryFilter, findOptions)
 	if err != nil {
@@ -151,9 +165,9 @@ func (cr *CocktailsRepository) GetByFilter(ctx context.Context, filter cocktail_
 		queryFilterRussianNames["$or"] = f
 	}
 	queryFilter := bson.M{}
-	f := bson.A{}
+	fIds := bson.A{}
 	if len(queryFilterIds) > 0 {
-		f = append(f, queryFilterIds)
+		fIds = append(fIds, queryFilterIds)
 	}
 	fNames := bson.A{}
 	if len(queryFilterEnNames) > 0 {
@@ -165,10 +179,10 @@ func (cr *CocktailsRepository) GetByFilter(ctx context.Context, filter cocktail_
 	if len(fNames) > 0 {
 		queryFilterNames := bson.M{}
 		queryFilterNames["$or"] = fNames
-		f = append(f, queryFilterNames)
+		fIds = append(fIds, queryFilterNames)
 	}
-	if len(f) > 0 {
-		queryFilter["$and"] = f
+	if len(fIds) > 0 {
+		queryFilter["$and"] = fIds
 	}
 
 	var results []cocktail_aggregate.Cocktail

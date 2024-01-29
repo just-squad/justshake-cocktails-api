@@ -51,6 +51,7 @@ type (
 		Steps []string
 	}
 	GetNamesRequest struct {
+		Ids        []uuid.UUID
 		Pagination models.Pagination
 	}
 	GetNamesResponse struct {
