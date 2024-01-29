@@ -1,10 +1,10 @@
 package v1
 
 import (
-	"justshake/cocktails/internal/use_cases"
+	"justshake/cocktails/internal/use_cases/cocktails"
 )
 
-func mapToCocktailResponseItem(items []use_cases.CocktailResponseItem) []cocktailResponseItem {
+func mapToCocktailResponseItem(items []cocktails.CocktailResponseItem) []cocktailResponseItem {
 	result := make([]cocktailResponseItem, len(items))
 	for i, item := range items {
 		result[i] = cocktailResponseItem{
@@ -18,7 +18,7 @@ func mapToCocktailResponseItem(items []use_cases.CocktailResponseItem) []cocktai
 	return result
 }
 
-func mapToTagApiResponse(items []use_cases.TagResponseItem) []tagApiResponse {
+func mapToTagApiResponse(items []cocktails.TagResponseItem) []tagApiResponse {
 	result := make([]tagApiResponse, len(items))
 	for i, item := range items {
 		result[i] = tagApiResponse{Name: item.Name}
@@ -26,7 +26,7 @@ func mapToTagApiResponse(items []use_cases.TagResponseItem) []tagApiResponse {
 	return result
 }
 
-func mapToCocktailItemApiResponse(items []use_cases.CocktailItemResponseItem) []cocktailItemApiResponse {
+func mapToCocktailItemApiResponse(items []cocktails.CocktailItemResponseItem) []cocktailItemApiResponse {
 	result := make([]cocktailItemApiResponse, len(items))
 	for i, item := range items {
 		result[i] = cocktailItemApiResponse{
@@ -38,6 +38,6 @@ func mapToCocktailItemApiResponse(items []use_cases.CocktailItemResponseItem) []
 	return result
 }
 
-func mapToRecipeApiResponse(item use_cases.RecipeResponseItem) recipeApiResponse {
+func mapToRecipeApiResponse(item cocktails.RecipeResponseItem) recipeApiResponse {
 	return recipeApiResponse{Steps: item.Steps}
 }
