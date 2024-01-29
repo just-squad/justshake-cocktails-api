@@ -3,7 +3,7 @@
 /.compose
 /.bin
 /cmd/scraper/.inshaker-cache
-/cmd/scraper/html-example
+/cmd/scraper/.html-example
 /config/secret-config.yml
 
 
