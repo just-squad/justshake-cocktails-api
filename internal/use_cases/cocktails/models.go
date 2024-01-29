@@ -1,4 +1,4 @@
-package use_cases
+package cocktails
 
 import (
 	"github.com/google/uuid"
@@ -51,6 +51,7 @@ type (
 		Steps []string
 	}
 	GetNamesRequest struct {
+		Ids        []uuid.UUID
 		Pagination models.Pagination
 	}
 	GetNamesResponse struct {

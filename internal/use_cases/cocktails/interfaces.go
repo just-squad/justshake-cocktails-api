@@ -1,10 +1,10 @@
-package use_cases
+package cocktails
 
 import (
 	"context"
 )
 
-// Cocktails Интерфейсы
+// Cocktails Интерфейс для структуры обработки бизнес логики
 type (
 	Cocktails interface {
 		GetNames(ctx context.Context, req GetNamesRequest) (GetNamesResponse, error)

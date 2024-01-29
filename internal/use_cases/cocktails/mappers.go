@@ -1,4 +1,4 @@
-package use_cases
+package cocktails
 
 import (
 	cocktail_aggregate "justshake/cocktails/internal/domain/cocktail-aggregate"

@@ -3,7 +3,7 @@ package v1
 import (
 	"github.com/google/uuid"
 	"justshake/cocktails/internal/domain/models"
-	"justshake/cocktails/internal/use_cases"
+	"justshake/cocktails/internal/use_cases/cocktails"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -12,11 +12,11 @@ import (
 )
 
 type cocktailsRoutes struct {
-	c use_cases.Cocktails
+	c cocktails.Cocktails
 	l logger.Interface
 }
 
-func newCocktailsRoutes(handler *gin.RouterGroup, t use_cases.Cocktails, l logger.Interface) {
+func newCocktailsRoutes(handler *gin.RouterGroup, t cocktails.Cocktails, l logger.Interface) {
 	r := &cocktailsRoutes{t, l}
 
 	h := handler.Group("/cocktails")
@@ -94,7 +94,7 @@ func (r *cocktailsRoutes) getById(c *gin.Context) {
 
 		return
 	}
-	cocktail, err := r.c.GetById(c.Request.Context(), use_cases.GetByIdRequest{Id: request.Id})
+	cocktail, err := r.c.GetById(c.Request.Context(), cocktails.GetByIdRequest{Id: request.Id})
 	if err != nil {
 		r.l.Error(err, "http - v1 - history")
 		errorResponse(c, http.StatusInternalServerError, "database problems")
@@ -138,7 +138,7 @@ func (r *cocktailsRoutes) getByFilter(c *gin.Context) {
 
 	cocktails, err := r.c.GetByFilter(
 		c.Request.Context(),
-		use_cases.GetByFilterRequest{Ids: request.Ids,
+		cocktails.GetByFilterRequest{Ids: request.Ids,
 			Names:        request.Names,
 			RussianNames: request.RussianNames,
 			Pagination: models.Pagination{

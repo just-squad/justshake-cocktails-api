@@ -130,7 +130,7 @@ func main() {
 		l.Fatal(fmt.Errorf("app - Run - mng.New: %w", err))
 	}
 	defer mongo.Close()
-	repo := repositories.New(mongo, l)
+	repo := repositories.NewCocktailsRepository(mongo, l)
 
 	for _, c2 := range cocktails {
 		item, err := repo.GetByFilter(context.TODO(), cocktail_aggregate.CocktailFilter{

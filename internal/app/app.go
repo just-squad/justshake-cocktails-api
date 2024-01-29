@@ -6,7 +6,8 @@ import (
 	"justshake/cocktails/config"
 	v1 "justshake/cocktails/internal/controller/http/v1"
 	"justshake/cocktails/internal/infrastructure/repositories"
-	"justshake/cocktails/internal/use_cases"
+	"justshake/cocktails/internal/use_cases/cocktails"
+	"justshake/cocktails/internal/use_cases/users"
 	"justshake/cocktails/pkg/httpserver"
 	"justshake/cocktails/pkg/logger"
 	"justshake/cocktails/pkg/mng"
@@ -30,11 +31,13 @@ func Run(cfg *config.Config) {
 	defer mongo.Close()
 
 	// Use case
-	cocktailsUseCase := use_cases.New(repositories.New(mongo, l))
+	cocktailsUseCase := cocktails.New(repositories.NewCocktailsRepository(mongo, l))
+	usersUseCase := users.New(repositories.NewUsersRepository(mongo, l))
 
 	// Старт телеграм бота
 	tgb, err := newBot(cfg,
 		cocktailsUseCase,
+		usersUseCase,
 		l)
 	if err != nil {
 		l.Fatal(fmt.Errorf("app - Run - newBot: %w", err))

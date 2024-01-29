@@ -2,6 +2,7 @@
 package v1
 
 import (
+	"justshake/cocktails/internal/use_cases/cocktails"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -11,7 +12,6 @@ import (
 
 	// Swagger docs.
 	_ "justshake/cocktails/docs"
-	"justshake/cocktails/internal/use_cases"
 	"justshake/cocktails/pkg/logger"
 )
 
@@ -22,7 +22,7 @@ import (
 // @version     1.0
 // @host        localhost:8080
 // @BasePath    /v1
-func NewRouter(handler *gin.Engine, l logger.Interface, t use_cases.Cocktails) {
+func NewRouter(handler *gin.Engine, l logger.Interface, t cocktails.Cocktails) {
 	// Options
 	handler.Use(gin.Logger())
 	handler.Use(gin.Recovery())
