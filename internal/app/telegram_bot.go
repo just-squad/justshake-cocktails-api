@@ -248,12 +248,12 @@ func (tgb *telegramBot) showCocktailPage(c tele.Context) error {
 	}
 	inlineButtonsRow := tele.Row{}
 	inlineButtonsRow = append(inlineButtonsRow, inlineButtons.Data(backButtonText, buttonName, request.PreviousData))
-	resExist, err := tgb.Users.IsExist(context.TODO(), users.GetByTelegramIdRequest{Id: c.Sender().ID})
+	userExist, err := tgb.Users.IsExist(context.TODO(), users.GetByTelegramIdRequest{Id: c.Sender().ID})
 	if err != nil {
 		tgb.log.Error(err)
-		return nil
+		userExist = false
 	}
-	if resExist {
+	if userExist {
 		user, err := tgb.Users.GetByTelegramId(context.TODO(), users.GetByTelegramIdRequest{Id: c.Sender().ID})
 		if err != nil {
 			tgb.log.Error(err)
