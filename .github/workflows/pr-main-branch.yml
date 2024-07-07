@@ -1,11 +1,11 @@
-name: release branch
+# name: release branch
 
-on:
-  pull_request: 
-    branches: ["release/*", "hotfix/*"]
-  pull_request_target:
-    branches:
-      - "main"
+# on:
+#   pull_request: 
+#     branches: ["release/*", "hotfix/*"]
+#   pull_request_target:
+#     branches:
+#       - "main"
   
 
-jobs:
+# jobs:
