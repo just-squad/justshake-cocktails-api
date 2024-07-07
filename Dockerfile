@@ -4,7 +4,7 @@ FROM golang:alpine AS builder
 LABEL stage=gobuilder
 ENV CGO_ENABLED 0
 ENV GOOS linux
-LABEL authors="nguscharin"
+LABEL authors="just-squad"
 
 # Set destination for COPY
 WORKDIR /build
