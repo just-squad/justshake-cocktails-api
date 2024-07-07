@@ -1,8 +1,11 @@
-name: pull request main branch
+name: release branch
 
 on:
+  pull_request: 
+    branches: ["release/*", "hotfix/*"]
   pull_request_target:
     branches:
       - "main"
+  
 
 jobs:

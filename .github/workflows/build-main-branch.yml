@@ -1,22 +1,19 @@
 # This workflow will build a golang project
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
 
-name: build main branch
+name: release
 
 on:
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
 
 jobs:
-
   check:
     name: Check code
-    runs-on: gh-actions
+    runs-on: ${{vars.RUNNER_NAME}}
     steps:
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Go
         uses: actions/setup-go@v4
@@ -28,22 +25,7 @@ jobs:
 
       - name: Install Git
         run: sudo apt install -y git 
-
-      - name: Git Clone Action
-        # You may pin to the exact commit or the version.
-        # uses: sudosubin/git-clone-action@8a93ce24d47782e30077508cccacf8a05a891bae
-        uses: sudosubin/git-clone-action@v1.0.1
-        #with:
-          # Repository owner and name. Ex: sudosubin/git-clone-action
-          #repository: # optional, default is ${{ github.repository }}
-          # Git host platform. Ex: github, gitlab, bitbucket, gitee, or else (git.suckless.org, ...)
-          #platform: # optional, default is github
-          # Git branch or tag to checkout.
-          #ref: # optional
-          # Relative path from current directory, where to clone.
-          #path: # optional
-          
-
+      
       - name: Go Format
         run: gofmt -s -w . && git diff --exit-code
 
@@ -53,24 +35,39 @@ jobs:
       - name: Go Tidy
         run: go mod tidy && git diff --exit-code
 
+  tests:
+    name: tests
+    needs: check
+    runs-on: ${{vars.RUNNER_NAME}}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21.5'
+
+      - name: Test
+        run: go test -v ./...
+
   build:
     name: Build
     needs: check
-    runs-on: gh-actions
+    runs-on: ${{vars.RUNNER_NAME}}
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-go@v4
-      with:
-        go-version: '1.21.5'
+      - name: Check out code
+        uses: actions/checkout@v4
 
-    - name: Go Mod
-      run: go mod download
+      - name: Set up Go  
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21.5'
 
-    - name: Go Mod Verify
-      run: go mod verify
+      - name: Go Mod
+        run: go mod download
 
-    - name: Build
-      run: go build -v ./...
+      - name: Go Mod Verify
+        run: go mod verify
 
-    - name: Test
-      run: go test -v ./...
+      - name: Build
+        run: go build -v ./...
