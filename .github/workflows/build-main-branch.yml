@@ -27,8 +27,7 @@ jobs:
 
       - name: test docker
         run: |
-          sudo service docker status
-          sudo service docker start
+          sudo /usr/bin/dockerd
           /usr/bin/docker ps
 
       - name: Set up Go
