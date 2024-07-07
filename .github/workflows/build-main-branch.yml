@@ -9,7 +9,7 @@ on:
 
 jobs:
   check:
-    name: Check code
+    name: check code
     runs-on: ${{vars.RUNNER_NAME}}
     steps:
       - name: Check out code
@@ -25,6 +25,15 @@ jobs:
 
       - name: Install Git
         run: sudo apt install -y git 
+
+      - name: pwd
+        run: pwd
+
+      - name: ls current dir
+        run: ls -la
+      
+      - name: cd
+        run: cd ./${{github.event.repository.name}}
       
       - name: Go Format
         run: gofmt -s -w . && git diff --exit-code
@@ -51,7 +60,7 @@ jobs:
         run: go test -v ./...
 
   build:
-    name: Build
+    name: build
     needs: check
     runs-on: ${{vars.RUNNER_NAME}}
     steps:
