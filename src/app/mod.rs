@@ -1,11 +1,18 @@
 use envconfig::Envconfig;
 
-use crate::bot::BotConfig;
+use crate::{
+    api::configurations::ApiConfiguration, bot::configurations::BotConfig,
+    infrastructure::configurations::DbConfiguration,
+};
 
 #[derive(Envconfig, Debug, Clone)]
 pub struct Config {
-    #[envconfig(nested = true)]
+    #[envconfig(nested)]
     pub bot_conf: BotConfig,
+    #[envconfig(nested)]
+    pub db_configuration: DbConfiguration,
+    #[envconfig(nested)]
+    pub api_configuration: ApiConfiguration,
 }
 
 #[derive(Debug, Clone)]

@@ -3,10 +3,13 @@ use std::sync::Arc;
 use app::Application;
 use bot::TgBotProvider;
 use dotenv::dotenv;
+use infrastructure::RepositoryFactory;
 
+mod api;
 mod app;
 mod bot;
 mod domain;
+mod infrastructure;
 
 #[tokio::main]
 async fn main() {
@@ -20,8 +23,15 @@ async fn main() {
     bot::INSTANCE
         .set(bot_provider.clone())
         .expect("Can't set static bot provider");
+    let repo_factory = RepositoryFactory::new(&app.config.db_configuration);
+    infrastructure::REPOFACTORYINSTANCE
+        .set(repo_factory.clone())
+        .expect("Can't set static repository factory");
     tokio::spawn(start_bot());
-    log::info!("Bot started...")
+    log::info!("Bot started...");
+    log::info!("Start Api Server...");
+    let api_provider = api::ApiProvider::new(&app.config.api_configuration);
+    api_provider.start_server().await;
 }
 
 async fn start_bot() {
