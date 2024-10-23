@@ -1,3 +1,4 @@
+use anyhow::Result;
 use std::sync::Arc;
 
 use app::Application;
@@ -12,7 +13,7 @@ mod domain;
 mod infrastructure;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<()> {
     dotenv().ok();
     pretty_env_logger::init();
     log::info!("Load application settings...");
@@ -32,6 +33,7 @@ async fn main() {
     log::info!("Start Api Server...");
     let api_provider = api::ApiProvider::new(&app.config.api_configuration);
     api_provider.start_server().await;
+    Ok(())
 }
 
 async fn start_bot() {

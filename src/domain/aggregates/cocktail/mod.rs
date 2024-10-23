@@ -1,40 +1,73 @@
+use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
+use std::error::Error;
 use uuid::Uuid;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Cocktail {
-    id: Uuid,
-    url: String,
-    name: String,
-    russian_name: String,
-    country_of_origin: String,
-    history: String,
-    tags: Vec<Tag>,
-    tools: Vec<CocktailItem>,
-    composition_elements: Vec<CocktailItem>,
-    recipe: Recipe,
+pub(crate) struct Cocktail {
+    pub(crate) id: Uuid,
+    pub(crate) url: String,
+    pub(crate) name: String,
+    pub(crate) russian_name: String,
+    pub(crate) country_of_origin: String,
+    pub(crate) history: String,
+    pub(crate) tags: Vec<Tag>,
+    pub(crate) tools: Vec<CocktailItem>,
+    pub(crate) composition_elements: Vec<CocktailItem>,
+    pub(crate) recipe: Recipe,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Tag {
-    name: String,
+pub(crate) struct Tag {
+    pub(crate) name: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct CocktailItem {
-    name: String,
-    count: i32,
-    unit: String,
+pub(crate) struct CocktailItem {
+    pub(crate) name: String,
+    pub(crate) count: i32,
+    pub(crate) unit: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-struct Recipe {
-    steps: Vec<String>,
+pub(crate) struct Recipe {
+    pub(crate) steps: Vec<String>,
 }
 
+#[async_trait]
 pub trait CocktailRepo {
-    async fn create(&self);
-    async fn get_names(&self);
-    async fn get_by_id(&self);
-    async fn get_by_filter(&self);
+    /// .
+    async fn create(&self, entity: &Cocktail);
+    /// .
+    async fn get_names(
+        &self,
+        filter: &CocktailNamesFilter,
+    ) -> Result<CocktailsPaged, Box<dyn Error + Sync + Send>>;
+    /// .
+    async fn get_by_id(&self, id: &Uuid) -> Result<Cocktail, Box<dyn Error + Sync + Send>>;
+    /// .
+    async fn get_by_filter(
+        &self,
+        filter: &CocktailFilter,
+    ) -> Result<CocktailsPaged, Box<dyn Error + Sync + Send>>;
+}
+
+#[derive(Clone, Debug)]
+pub struct CocktailsPaged {
+    pub items: Vec<Cocktail>,
+    pub total_count: i64,
+}
+
+#[derive(Clone, Debug)]
+pub struct CocktailFilter {
+    pub ids: Vec<Uuid>,
+    pub names: Vec<String>,
+    pub russian_names: Vec<String>,
+    pub pagination: crate::domain::Pagination,
+}
+
+#[derive(Clone, Debug)]
+pub struct CocktailNamesFilter {
+    pub ids: Vec<Uuid>,
+    pub pagination: crate::domain::Pagination,
 }

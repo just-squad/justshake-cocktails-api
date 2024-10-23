@@ -1,12 +1,14 @@
 pub mod configurations;
+mod mongo;
 mod repositories;
 
+use anyhow::{Context, Result};
 use configurations::DbConfiguration;
-use mongodb::{Client, Collection};
-use repositories::user_repository::UserRepository;
+use repositories::{cocktail_repository::CocktailRepository, user_repository::UserRepository};
 use std::sync::OnceLock;
+use thiserror::Error;
 
-use crate::domain::aggregates::user::{User, UserRepo};
+use crate::domain::aggregates::{cocktail::CocktailRepo, user::UserRepo};
 
 pub static REPOFACTORYINSTANCE: OnceLock<RepositoryFactory> = OnceLock::new();
 
@@ -30,35 +32,21 @@ impl RepositoryFactory {
 }
 
 impl RepositoryFactory {
-    pub async fn get_user_repository(&self) -> impl UserRepo {
-        UserRepository::new(self.db_configuration.clone()).await
-    }
-}
-
-#[derive(Clone, Debug)]
-struct MongoDbClient {
-    config: DbConfiguration,
-    client: Client,
-}
-
-impl MongoDbClient {
-    pub async fn new(cfg: DbConfiguration) -> Self {
-        let mongo_connection_string = format!(
-            "mongodb://{}:{}@{}:{}",
-            cfg.mongo_username, cfg.mongo_password, cfg.mongo_host, cfg.mongo_port
-        );
-        let mongodb_client = Client::with_uri_str(&mongo_connection_string)
+    pub async fn get_user_repository(&self) -> Result<impl UserRepo> {
+        Ok(UserRepository::new(self.db_configuration.clone())
             .await
-            .expect("Can't create MongoDb client");
-        MongoDbClient {
-            config: cfg.clone(),
-            client: mongodb_client,
-        }
+            .context("failed to create user_repository")?)
     }
 
-    pub fn get_users_collection(&self) -> Collection<User> {
-        self.client
-            .database(&self.config.mongo_database_name)
-            .collection::<User>("users")
+    pub async fn get_cocktails_repository(&self) -> Result<impl CocktailRepo> {
+        Ok(CocktailRepository::new(self.db_configuration.clone())
+            .await
+            .context("failed to create cocktail_repository")?)
     }
+}
+
+#[derive(Error, Debug)]
+pub enum InfrastructureError {
+    #[error("error during mongodb query: {0}")]
+    MongoQueryError(mongodb::error::Error),
 }

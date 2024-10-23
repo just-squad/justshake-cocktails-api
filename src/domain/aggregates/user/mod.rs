@@ -14,11 +14,11 @@ pub struct User {
 #[async_trait]
 pub trait UserRepo {
     /// .
-    async fn create(&self);
+    async fn create(&self, user_entity: &User);
     /// .
-    async fn delete(&self);
+    async fn delete(&self, user_entity: &User);
     /// .
-    async fn update(&self);
+    async fn update(&self, user_entity: &User);
     /// .
     async fn get_by_telegram_id(
         &self,
