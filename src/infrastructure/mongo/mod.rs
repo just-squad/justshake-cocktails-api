@@ -1,10 +1,9 @@
 pub mod db_models;
 
 use anyhow::{Context, Result};
+use db_models::{CocktailDbModel, UserDbModel};
 use mongodb::{options::UpdateModifications, Client, Collection};
 use serde::{Deserialize, Serialize};
-
-use crate::domain::aggregates::{cocktail::Cocktail, user::User};
 
 use super::configurations::DbConfiguration;
 
@@ -36,16 +35,16 @@ impl MongoDbClient {
         })
     }
 
-    pub fn get_users_collection(&self) -> Collection<User> {
+    pub fn get_users_collection(&self) -> Collection<UserDbModel> {
         self.client
             .database(&self.config.mongo_database_name)
-            .collection::<User>("users")
+            .collection::<UserDbModel>("users")
     }
 
-    pub fn get_cocktails_collection(&self) -> Collection<Cocktail> {
+    pub fn get_cocktails_collection(&self) -> Collection<CocktailDbModel> {
         self.client
             .database(&self.config.mongo_database_name)
-            .collection::<Cocktail>("cocktails")
+            .collection::<CocktailDbModel>("cocktails")
     }
 }
 
