@@ -137,10 +137,10 @@ async fn callback_handler(
                 message_proc.send_cocktails_paged_filter_by_name(&user_id, &callback.chat_id().unwrap()).await?;
             }
             MenuCommands::Register => {
-                let message_proc = MessageProcessor::new().await;
+                let _message_proc = MessageProcessor::new().await;
             }
             MenuCommands::ProfilePage => {
-                let message_proc = MessageProcessor::new().await;
+                let _message_proc = MessageProcessor::new().await;
             }
             MenuCommands::Unknown => todo!(),
         };

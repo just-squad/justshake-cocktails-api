@@ -1,4 +1,4 @@
-use teloxide::{types::{InlineKeyboardButton, InlineKeyboardMarkup}, utils::command::BotCommands};
+use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup};
 
 use super::commands::MenuCommands;
 

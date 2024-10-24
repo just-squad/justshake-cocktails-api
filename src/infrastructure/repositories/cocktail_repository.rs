@@ -1,14 +1,17 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use futures::StreamExt;
 use mongodb::bson::doc;
+use tokio_stream::StreamExt;
 use uuid::Uuid;
 
 use crate::{
     domain::aggregates::cocktail::{
         Cocktail, CocktailFilter, CocktailNamesFilter, CocktailRepo, CocktailsPaged,
     },
-    infrastructure::{configurations::DbConfiguration, mongo::{MongoDbClient, db_models::CocktailDbModel}},
+    infrastructure::{
+        configurations::DbConfiguration,
+        mongo::{CocktailDbModel, MongoDbClient},
+    },
 };
 
 #[derive(Debug, Clone)]
@@ -25,33 +28,12 @@ impl CocktailRepository {
     }
 }
 
-impl Into<Cocktail> for CocktailDbModel {
-    fn into(self) -> Cocktail {
-        Cocktail {
-            id: Uuid::parse_str(&self.id).unwrap(),
-            url: self.url,
-            name: self.name,
-            russian_name: self.russian_name,
-            country_of_origin: self.country_of_origin,
-            history: self.history,
-            tags: self.tags.iter().map(|x| Into::into(x.clone())).collect(),
-            tools: self.tools.iter().map(|x| Into::into(x.clone())).collect(),
-            composition_elements: self
-                .composition_elements
-                .iter()
-                .map(|x| Into::into(x.clone()))
-                .collect(),
-            recipe: self.recipe.into(),
-        }
-    }
-}
-
 #[async_trait]
 impl CocktailRepo for CocktailRepository {
     async fn create(&self, entity: &Cocktail) {
         let cocktail_collection = self.db_client.get_cocktails_collection();
         let _insert_result = cocktail_collection
-            .insert_one(entity)
+            .insert_one(CocktailDbModel::from(entity.clone()))
             .await
             .expect("Error while insert user to database");
     }
@@ -59,21 +41,24 @@ impl CocktailRepo for CocktailRepository {
     async fn get_names(
         &self,
         filter: &CocktailNamesFilter,
-    ) -> Result<CocktailsPaged, Box<dyn std::error::Error + Sync + Send>> {
+    ) -> Result<CocktailsPaged> {
         let result = self
             .db_client
             .get_cocktails_collection()
             .find(doc! {})
-            .projection(doc! {"id":1, "russian_name":1})
+            //.projection(doc! {"id":1, "russian_name":1})
             .limit(filter.pagination.items_per_page as i64)
             .skip(filter.pagination.page * filter.pagination.items_per_page)
-            .await
+            .await;
+        let mapping: Vec<Cocktail> = result
             .context("failed to find")?
-            .map(|x| x.map(|x| x.into()))
-            .collect::<Cocktail>();
+            .map(|x| x.map(Into::into))
+            .collect::<Result<_, _>>()
+            .await
+            .context("fail to collect cocktails in result")?;
 
         let result = CocktailsPaged {
-            items: result.unwrap(),
+            items: mapping,
             total_count: 0,
         };
 
@@ -83,7 +68,7 @@ impl CocktailRepo for CocktailRepository {
     async fn get_by_id(
         &self,
         id: &Uuid,
-    ) -> Result<Cocktail, Box<dyn std::error::Error + Sync + Send>> {
+    ) -> Result<Cocktail> {
         let cocktail_collection = self.db_client.get_cocktails_collection();
 
         let cocktail_result = cocktail_collection
@@ -97,14 +82,14 @@ impl CocktailRepo for CocktailRepository {
             }
         };
 
-        Ok(cocktail)
+        Ok(cocktail.into())
     }
 
     async fn get_by_filter(
         &self,
-        filter: &CocktailFilter,
-    ) -> Result<CocktailsPaged, Box<dyn std::error::Error + Sync + Send>> {
-        let cocktail_collection = self.db_client.get_cocktails_collection();
+        _filter: &CocktailFilter,
+    ) -> Result<CocktailsPaged> {
+        let _cocktail_collection = self.db_client.get_cocktails_collection();
         let result = CocktailsPaged {
             items: vec![],
             total_count: 0,

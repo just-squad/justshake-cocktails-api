@@ -5,7 +5,7 @@ use crate::{
     bot::TgBotProvider,
     domain::{
         aggregates::{
-            cocktail::{CocktailFilter, CocktailNamesFilter, CocktailRepo},
+            cocktail::{CocktailNamesFilter, CocktailRepo},
             user::UserRepo,
         },
         Pagination,
@@ -78,8 +78,8 @@ where
 
     pub async fn send_cocktails_paged(
         &self,
-        user_id: &UserId,
-        chat_id: &ChatId,
+        _user_id: &UserId,
+        _chat_id: &ChatId,
     ) -> Result<(), Box<dyn Error + Send + Sync>> {
         let cocktails_filter = CocktailNamesFilter {
             ids: vec![],
@@ -88,14 +88,14 @@ where
                 items_per_page: 10,
             },
         };
-        let cocktails_names = self.cocktail_repo.get_names(&cocktails_filter).await?;
+        let _cocktails_names = self.cocktail_repo.get_names(&cocktails_filter).await?;
         Ok(())
     }
 
     pub async fn send_cocktails_paged_filter_by_name(
         &self,
-        user_id: &UserId,
-        chat_id: &ChatId,
+        _user_id: &UserId,
+        _chat_id: &ChatId,
     ) -> Result<(), Box<dyn Error + Send + Sync>> {
         Ok(())
     }

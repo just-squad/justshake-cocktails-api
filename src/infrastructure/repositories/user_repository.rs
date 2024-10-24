@@ -6,7 +6,7 @@ use mongodb::bson::doc;
 
 use crate::{
     domain::aggregates::user::{User, UserRepo},
-    infrastructure::{configurations::DbConfiguration, mongo::MongoDbClient, mongo::Set},
+    infrastructure::{configurations::DbConfiguration, mongo::MongoDbClient, mongo::Set, mongo::UserDbModel},
 };
 
 #[derive(Debug, Clone)]
@@ -26,7 +26,7 @@ impl UserRepo for UserRepository {
     async fn create(&self, user_entity: &User) {
         let user_collection = self.db_client.get_users_collection();
         let _insert_result = user_collection
-            .insert_one(user_entity)
+            .insert_one(UserDbModel::from(user_entity.clone()))
             .await
             .expect("Error while insert user to database");
     }
@@ -67,7 +67,7 @@ impl UserRepo for UserRepository {
             }
         };
 
-        Ok(user_result)
+        Ok(user_result.into())
     }
 
     async fn is_exist_by_telegram_id(

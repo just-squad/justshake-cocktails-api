@@ -2,6 +2,7 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use uuid::Uuid;
+use anyhow::Result;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) struct Cocktail {
@@ -42,14 +43,14 @@ pub trait CocktailRepo {
     async fn get_names(
         &self,
         filter: &CocktailNamesFilter,
-    ) -> Result<CocktailsPaged, Box<dyn Error + Sync + Send>>;
+    ) -> Result<CocktailsPaged>;
     /// .
-    async fn get_by_id(&self, id: &Uuid) -> Result<Cocktail, Box<dyn Error + Sync + Send>>;
+    async fn get_by_id(&self, id: &Uuid) -> Result<Cocktail>;
     /// .
     async fn get_by_filter(
         &self,
         filter: &CocktailFilter,
-    ) -> Result<CocktailsPaged, Box<dyn Error + Sync + Send>>;
+    ) -> Result<CocktailsPaged>;
 }
 
 #[derive(Clone, Debug)]
