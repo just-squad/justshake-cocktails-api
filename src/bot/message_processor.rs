@@ -17,7 +17,7 @@ use teloxide::{
     prelude::Requester,
     types::{ChatId, UserId},
 };
-
+use teloxide::utils::markdown::escape;
 use super::inline_keyboards;
 
 #[derive(Debug, Clone)]
@@ -79,7 +79,7 @@ where
     pub async fn send_cocktails_paged(
         &self,
         _user_id: &UserId,
-        _chat_id: &ChatId,
+        chat_id: &ChatId,
     ) -> Result<(), Box<dyn Error + Send + Sync>> {
         let cocktails_filter = CocktailNamesFilter {
             ids: vec![],
@@ -89,6 +89,8 @@ where
             },
         };
         let _cocktails_names = self.cocktail_repo.get_names(&cocktails_filter).await?;
+
+        self.bot_provider.bot.send_message(*chat_id, escape(format!("{:?}", _cocktails_names).as_str())).await?;
         Ok(())
     }
 

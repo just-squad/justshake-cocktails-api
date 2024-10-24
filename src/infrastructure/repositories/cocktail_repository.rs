@@ -46,13 +46,13 @@ impl CocktailRepo for CocktailRepository {
             .db_client
             .get_cocktails_collection()
             .find(doc! {})
-            //.projection(doc! {"id":1, "russian_name":1})
+            .projection(doc! {"id":1, "url": 1, "russian_name":1})
             .limit(filter.pagination.items_per_page as i64)
             .skip(filter.pagination.page * filter.pagination.items_per_page)
-            .await;
+            .await
+            .context("failed to find")?;
         let mapping: Vec<Cocktail> = result
-            .context("failed to find")?
-            .map(|x| x.map(Into::into))
+            .map(|x| x.map(|x| x.into()))
             .collect::<Result<_, _>>()
             .await
             .context("fail to collect cocktails in result")?;

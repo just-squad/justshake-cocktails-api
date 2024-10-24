@@ -118,43 +118,43 @@ impl Into<User> for UserDbModel {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CocktailDbModel {
-    pub id: String,
+    // pub id: String,
     pub url: String,
-    pub name: String,
+    // pub name: String,
     pub russian_name: String,
-    pub country_of_origin: String,
-    pub history: String,
-    pub tags: Vec<TagDbModel>,
-    pub tools: Vec<CocktailItemDbModel>,
-    pub composition_elements: Vec<CocktailItemDbModel>,
-    pub recipe: RecipeDbModel,
+    // pub country_of_origin: String,
+    // pub history: String,
+    // pub tags: Vec<TagDbModel>,
+    // pub tools: Vec<CocktailItemDbModel>,
+    // pub composition_elements: Vec<CocktailItemDbModel>,
+    // pub recipe: RecipeDbModel,
 }
 
 impl From<Cocktail> for CocktailDbModel {
     fn from(value: Cocktail) -> Self {
         CocktailDbModel {
-            id: value.id.to_string(),
+            // id: value.id.to_string(),
             url: value.url,
-            name: value.name,
+            // name: value.name,
             russian_name: value.russian_name,
-            country_of_origin: value.country_of_origin,
-            history: value.history,
-            tags: value
-                .tags
-                .iter()
-                .map(|x| TagDbModel::from(x.clone()))
-                .collect(),
-            tools: value
-                .tools
-                .iter()
-                .map(|x| CocktailItemDbModel::from(x.clone()))
-                .collect(),
-            composition_elements: value
-                .composition_elements
-                .iter()
-                .map(|x| CocktailItemDbModel::from(x.clone()))
-                .collect(),
-            recipe: RecipeDbModel::from(value.recipe),
+            // country_of_origin: value.country_of_origin,
+            // history: value.history,
+            // tags: value
+            //     .tags
+            //     .iter()
+            //     .map(|x| TagDbModel::from(x.clone()))
+            //     .collect(),
+            // tools: value
+            //     .tools
+            //     .iter()
+            //     .map(|x| CocktailItemDbModel::from(x.clone()))
+            //     .collect(),
+            // composition_elements: value
+            //     .composition_elements
+            //     .iter()
+            //     .map(|x| CocktailItemDbModel::from(x.clone()))
+            //     .collect(),
+            // recipe: RecipeDbModel::from(value.recipe),
         }
     }
 }
@@ -162,20 +162,20 @@ impl From<Cocktail> for CocktailDbModel {
 impl Into<Cocktail> for CocktailDbModel {
     fn into(self) -> Cocktail {
         Cocktail {
-            id: Uuid::parse_str(&self.id).unwrap(),
+            // id: Uuid::parse_str(&self.id).unwrap(),
             url: self.url,
-            name: self.name,
+            // name: self.name,
             russian_name: self.russian_name,
-            country_of_origin: self.country_of_origin,
-            history: self.history,
-            tags: self.tags.iter().map(|x| Into::into(x.clone())).collect(),
-            tools: self.tools.iter().map(|x| Into::into(x.clone())).collect(),
-            composition_elements: self
-                .composition_elements
-                .iter()
-                .map(|x| Into::into(x.clone()))
-                .collect(),
-            recipe: self.recipe.into(),
+            // country_of_origin: self.country_of_origin,
+            // history: self.history,
+            // tags: self.tags.iter().map(|x| Into::into(x.clone())).collect(),
+            // tools: self.tools.iter().map(|x| Into::into(x.clone())).collect(),
+            // composition_elements: self
+            //     .composition_elements
+            //     .iter()
+            //     .map(|x| Into::into(x.clone()))
+            //     .collect(),
+            // recipe: self.recipe.into(),
         }
     }
 }

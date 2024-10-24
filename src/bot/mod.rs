@@ -144,9 +144,6 @@ async fn callback_handler(
             }
             MenuCommands::Unknown => todo!(),
         };
-
-        bot.send_message(callback.chat_id().unwrap(), callback_btn)
-            .await?;
     }
 
     Ok(())

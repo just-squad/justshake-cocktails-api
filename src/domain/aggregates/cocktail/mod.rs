@@ -6,16 +6,16 @@ use anyhow::Result;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) struct Cocktail {
-    pub(crate) id: Uuid,
+    // pub(crate) id: Uuid,
     pub(crate) url: String,
-    pub(crate) name: String,
+    // pub(crate) name: String,
     pub(crate) russian_name: String,
-    pub(crate) country_of_origin: String,
-    pub(crate) history: String,
-    pub(crate) tags: Vec<Tag>,
-    pub(crate) tools: Vec<CocktailItem>,
-    pub(crate) composition_elements: Vec<CocktailItem>,
-    pub(crate) recipe: Recipe,
+    // pub(crate) country_of_origin: String,
+    // pub(crate) history: String,
+    // pub(crate) tags: Vec<Tag>,
+    // pub(crate) tools: Vec<CocktailItem>,
+    // pub(crate) composition_elements: Vec<CocktailItem>,
+    // pub(crate) recipe: Recipe,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
