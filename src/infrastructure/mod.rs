@@ -10,10 +10,7 @@ use configurations::DbConfiguration;
 use repositories::{cocktail_repository::CocktailRepository, user_repository::UserRepository};
 use std::sync::OnceLock;
 
-use crate::domain::aggregates::{
-    cocktail::CocktailRepo,
-    user::UserRepo,
-};
+use crate::domain::aggregates::{cocktail::CocktailRepo, user::UserRepo};
 
 pub static REPOFACTORYINSTANCE: OnceLock<RepositoryFactory> = OnceLock::new();
 
@@ -45,5 +42,3 @@ impl RepositoryFactory {
         CocktailRepository::new(self.db_configuration.clone()).await
     }
 }
-
-

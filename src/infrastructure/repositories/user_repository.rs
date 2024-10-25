@@ -6,7 +6,9 @@ use mongodb::bson::doc;
 
 use crate::{
     domain::aggregates::user::{User, UserRepo},
-    infrastructure::{configurations::DbConfiguration, mongo::MongoDbClient, mongo::Set, mongo::UserDbModel},
+    infrastructure::{
+        configurations::DbConfiguration, mongo::MongoDbClient, mongo::Set, mongo::UserDbModel,
+    },
 };
 
 #[derive(Debug, Clone)]
@@ -16,7 +18,9 @@ pub struct UserRepository {
 
 impl UserRepository {
     pub async fn new(config: DbConfiguration) -> Result<Self> {
-        let client = MongoDbClient::new(config).await.context("error while create db client for user_repository")?;
+        let client = MongoDbClient::new(config)
+            .await
+            .context("error while create db client for user_repository")?;
         Ok(Self { db_client: client })
     }
 }

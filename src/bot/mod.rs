@@ -107,7 +107,7 @@ async fn inline_query_handler(
         "Chose debian version",
         InputMessageContent::Text(InputMessageContentText::new("Debian versions:")),
     )
-    .reply_markup(inline_keyboards::get_main_menu_keyboad(&true));
+    .reply_markup(inline_keyboards::get_main_menu_keyboard(&true));
 
     bot.answer_inline_query(q.id, vec![choose_debian_version.into()])
         .await?;
@@ -128,18 +128,32 @@ async fn callback_handler(
         log::debug!("User {} press menu button: {}", user_id, callback_btn);
         let menu_cmd = MenuCommands::parse(callback_btn);
         match menu_cmd {
-            MenuCommands::CocktailsList(_) => {
+            MenuCommands::CocktailsList(page) => {
                 let message_proc = MessageProcessor::new().await?;
-                message_proc.send_cocktails_paged(&user_id, &callback.chat_id().unwrap()).await?;
+                let message = callback.clone().message.unwrap().id();
+                message_proc
+                    .send_cocktails_paged(&user_id, &callback.chat_id().unwrap(), &message, &page)
+                    .await?;
             }
             MenuCommands::SearchByName => {
                 let message_proc = MessageProcessor::new().await?;
-                message_proc.send_cocktails_paged_filter_by_name(&user_id, &callback.chat_id().unwrap()).await?;
+                message_proc
+                    .send_cocktails_paged_filter_by_name(&user_id, &callback.chat_id().unwrap())
+                    .await?;
             }
             MenuCommands::Register => {
                 let _message_proc = MessageProcessor::new().await;
             }
             MenuCommands::ProfilePage => {
+                let _message_proc = MessageProcessor::new().await;
+            }
+            MenuCommands::SearchById(_) => {
+                let _message_proc = MessageProcessor::new().await;
+            }
+            MenuCommands::NextCocktailsPage(_) => {
+                let _message_proc = MessageProcessor::new().await;
+            }
+            MenuCommands::PreviousCocktailsPage(_) => {
                 let _message_proc = MessageProcessor::new().await;
             }
             MenuCommands::Unknown => todo!(),

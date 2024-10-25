@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use std::error::Error;
 
+use super::inline_keyboards;
 use crate::{
     bot::TgBotProvider,
     domain::{
@@ -12,13 +13,14 @@ use crate::{
     },
     infrastructure,
 };
+use teloxide::payloads::{EditMessageText, EditMessageTextInlineSetters, EditMessageTextSetters};
+use teloxide::types::{MessageId, ParseMode, Recipient};
+use teloxide::utils::markdown::escape;
 use teloxide::{
     payloads::SendMessageSetters,
     prelude::Requester,
     types::{ChatId, UserId},
 };
-use teloxide::utils::markdown::escape;
-use super::inline_keyboards;
 
 #[derive(Debug, Clone)]
 pub struct MessageProcessor<TUserRepo, TCocktailRepo> {
@@ -65,7 +67,7 @@ where
         chat_id: &ChatId,
     ) -> Result<(), Box<dyn Error + Send + Sync>> {
         let user_registered = self.user_repo.is_exist_by_telegram_id(&user_id.0).await?;
-        let keyboard = inline_keyboards::get_main_menu_keyboad(&user_registered);
+        let keyboard = inline_keyboards::get_main_menu_keyboard(&user_registered);
 
         self.bot_provider
             .bot
@@ -80,17 +82,37 @@ where
         &self,
         _user_id: &UserId,
         chat_id: &ChatId,
+        message_id: &MessageId,
+        next_page: &u64,
     ) -> Result<(), Box<dyn Error + Send + Sync>> {
+        let page_size: u64 = 10;
         let cocktails_filter = CocktailNamesFilter {
             ids: vec![],
             pagination: Pagination {
-                page: 0,
-                items_per_page: 10,
+                page: next_page.clone(),
+                items_per_page: page_size.clone(),
             },
         };
         let _cocktails_names = self.cocktail_repo.get_names(&cocktails_filter).await?;
+        let keyboard =
+            inline_keyboards::get_cocktails_list_keyboard(&_cocktails_names, next_page, &page_size);
 
-        self.bot_provider.bot.send_message(*chat_id, escape(format!("{:?}", _cocktails_names).as_str())).await?;
+        let edit_message_text = EditMessageText {
+            chat_id: Recipient::from(chat_id.clone()),
+            message_id: message_id.clone(),
+            text: "Коктейли: ".to_string(),
+            parse_mode: Some(ParseMode::MarkdownV2),
+            entities: None,
+            link_preview_options: None,
+            reply_markup: Some(keyboard.clone()),
+        };
+        let mut edit_message_text =
+            self.bot_provider
+                .bot
+                .edit_message_text(*chat_id, *message_id, "Коктейли: ");
+        edit_message_text = edit_message_text.reply_markup(keyboard.clone());
+        edit_message_text.await?;
+
         Ok(())
     }
 

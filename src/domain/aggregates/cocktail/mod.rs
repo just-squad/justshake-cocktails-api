@@ -1,21 +1,23 @@
+use anyhow::Result;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
+use std::fmt;
+use std::fmt::Formatter;
 use uuid::Uuid;
-use anyhow::Result;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) struct Cocktail {
-    // pub(crate) id: Uuid,
-    pub(crate) url: String,
-    // pub(crate) name: String,
+    pub(crate) id: Uuid,
+    pub(crate) url: Option<String>,
+    pub(crate) name: Option<String>,
     pub(crate) russian_name: String,
-    // pub(crate) country_of_origin: String,
-    // pub(crate) history: String,
-    // pub(crate) tags: Vec<Tag>,
-    // pub(crate) tools: Vec<CocktailItem>,
-    // pub(crate) composition_elements: Vec<CocktailItem>,
-    // pub(crate) recipe: Recipe,
+    pub(crate) country_of_origin: Option<String>,
+    pub(crate) history: Option<String>,
+    pub(crate) tags: Option<Vec<Tag>>,
+    pub(crate) tools: Option<Vec<CocktailItem>>,
+    pub(crate) composition_elements: Option<Vec<CocktailItem>>,
+    pub(crate) recipe: Option<Recipe>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -40,23 +42,17 @@ pub trait CocktailRepo {
     /// .
     async fn create(&self, entity: &Cocktail);
     /// .
-    async fn get_names(
-        &self,
-        filter: &CocktailNamesFilter,
-    ) -> Result<CocktailsPaged>;
+    async fn get_names(&self, filter: &CocktailNamesFilter) -> Result<CocktailsPaged>;
     /// .
     async fn get_by_id(&self, id: &Uuid) -> Result<Cocktail>;
     /// .
-    async fn get_by_filter(
-        &self,
-        filter: &CocktailFilter,
-    ) -> Result<CocktailsPaged>;
+    async fn get_by_filter(&self, filter: &CocktailFilter) -> Result<CocktailsPaged>;
 }
 
 #[derive(Clone, Debug)]
 pub struct CocktailsPaged {
     pub items: Vec<Cocktail>,
-    pub total_count: i64,
+    pub total_count: u64,
 }
 
 #[derive(Clone, Debug)]
