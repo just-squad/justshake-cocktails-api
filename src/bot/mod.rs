@@ -128,11 +128,14 @@ async fn callback_handler(
         log::debug!("User {} press menu button: {}", user_id, callback_btn);
         let menu_cmd = MenuCommands::parse(callback_btn);
         match menu_cmd {
+            MenuCommands::MainMenu => {
+                let _message_proc = MessageProcessor::new().await;
+            }
             MenuCommands::CocktailsList(page) => {
                 let message_proc = MessageProcessor::new().await?;
-                let message = callback.clone().message.unwrap().id();
+                let message_id = callback.clone().message.unwrap().id();
                 message_proc
-                    .send_cocktails_paged(&user_id, &callback.chat_id().unwrap(), &message, &page)
+                    .send_cocktails_paged(&user_id, &callback.chat_id().unwrap(), &message_id, &page)
                     .await?;
             }
             MenuCommands::SearchByName => {
@@ -155,6 +158,13 @@ async fn callback_handler(
             }
             MenuCommands::PreviousCocktailsPage(_) => {
                 let _message_proc = MessageProcessor::new().await;
+            }
+            MenuCommands::CocktailsPages(total_pages) => {
+                let message_proc = MessageProcessor::new().await?;
+                let message_id = callback.clone().message.unwrap().id();
+                message_proc
+                    .send_cocktails_pages(&user_id, &callback.chat_id().unwrap(), &message_id, &total_pages)
+                    .await?;
             }
             MenuCommands::Unknown => todo!(),
         };

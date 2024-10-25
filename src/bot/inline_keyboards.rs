@@ -3,6 +3,26 @@ use crate::domain::aggregates::cocktail::CocktailsPaged;
 use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup};
 use teloxide::utils::markdown::escape;
 
+#[derive(Copy, Clone)]
+pub struct PageNumber(pub u64);
+impl PageNumber {
+    pub fn next(&self) -> Self {
+        PageNumber(self.0 + 1)
+    }
+
+    pub fn previous(&self) -> Self {
+        if self.0 == 0 {
+            PageNumber(0)
+        } else {
+            PageNumber(self.0 - 1)
+        }
+    }
+
+    pub fn human_readable_page_number(&self) -> PageNumber {
+        PageNumber(self.0 + 1)
+    }
+}
+
 #[derive(Debug)]
 struct MenuButtonMeta<'a> {
     name: &'a str,
@@ -60,7 +80,7 @@ pub fn get_main_menu_keyboard(user_registered: &bool) -> InlineKeyboardMarkup {
 
 pub fn get_cocktails_list_keyboard(
     cocktails_paged: &CocktailsPaged,
-    current_page: &u64,
+    current_page: &PageNumber,
     page_size: &u64,
 ) -> InlineKeyboardMarkup {
     let mut keyboard: Vec<Vec<InlineKeyboardButton>> = vec![];
@@ -77,54 +97,68 @@ pub fn get_cocktails_list_keyboard(
             .collect();
         keyboard.push(row);
     }
-    let available_pages: u64 = cocktails_paged.total_count / page_size;
-    let human_current_page = current_page + 1;
-    let page_counter_text = escape(format!("{}/{}", human_current_page, available_pages).as_str());
+    let available_pages: u64 = (cocktails_paged.total_count / page_size) + 1;
+    let page_counter_text = escape(
+        format!(
+            "{}/{}",
+            current_page.human_readable_page_number().0,
+            available_pages
+        )
+        .as_str(),
+    );
 
-    let next_page = current_page + 1;
-    let prev_page = if current_page.clone() == 0 {
-        0
-    } else {
-        current_page - 1
-    };
-    let cocktail_list_command = String::from(MenuCommands::CocktailsList(0).as_ref());
-    let main_menu_command = String::from(MenuCommands::MainMenu.as_ref());
-
-    let navigate_line: Vec<InlineKeyboardButton> = if current_page.clone() == 0 {
+    let navigate_line: Vec<InlineKeyboardButton> = if current_page.0 == 0 {
         vec![
-            InlineKeyboardButton::callback(page_counter_text.clone(), "a"),
+            InlineKeyboardButton::callback(page_counter_text.clone(), MenuCommands::get_cocktail_pages_command_string(&(available_pages))),
             InlineKeyboardButton::callback(
                 "👉",
-                format!("{}{}", cocktail_list_command, next_page.to_string()),
+                MenuCommands::get_cocktails_list_command_string(&current_page.next()),
             ),
         ]
-    } else if current_page.clone() == cocktails_paged.total_count / page_size {
+    } else if current_page.0 == cocktails_paged.total_count / page_size {
         vec![
             InlineKeyboardButton::callback(
                 "👈",
-                format!("{}{}", cocktail_list_command, prev_page.to_string()),
+                MenuCommands::get_cocktails_list_command_string(&current_page.previous()),
             ),
-            InlineKeyboardButton::callback(page_counter_text.clone(), "a"),
+            InlineKeyboardButton::callback(page_counter_text.clone(), MenuCommands::get_cocktail_pages_command_string(&(available_pages))),
         ]
     } else {
         vec![
             InlineKeyboardButton::callback(
                 "👈",
-                format!("{}{}", cocktail_list_command, prev_page.to_string()),
+                MenuCommands::get_cocktails_list_command_string(&current_page.previous()),
             ),
-            InlineKeyboardButton::callback(page_counter_text.clone(), "a"),
+            InlineKeyboardButton::callback(page_counter_text.clone(), MenuCommands::get_cocktail_pages_command_string(&(available_pages))),
             InlineKeyboardButton::callback(
                 "👉",
-                format!("{}{}", cocktail_list_command, next_page.to_string()),
+                MenuCommands::get_cocktails_list_command_string(&current_page.next()),
             ),
         ]
     };
     keyboard.push(navigate_line);
-    keyboard.push(vec![InlineKeyboardButton::callback("👈 Назад", main_menu_command)]);
+    keyboard.push(vec![InlineKeyboardButton::callback(
+        "👈 Назад",
+        MenuCommands::get_main_menu_command_string(),
+    )]);
 
     InlineKeyboardMarkup::new(keyboard)
 }
 
-pub fn get_cocktail_pages_keyboard(){
+pub fn get_cocktail_pages_keyboard(total_pages: &u64) -> InlineKeyboardMarkup {
+    let from_page: u64 = 1;
+    let pages = Vec::from_iter(from_page..total_pages.clone());
 
+    let mut keyboard: Vec<Vec<InlineKeyboardButton>> = vec![];
+    for page_line in pages.chunks(4) {
+        let row = page_line
+            .iter()
+            .map(|page| {
+                InlineKeyboardButton::callback(page.to_string(), MenuCommands::get_cocktails_list_command_string(&PageNumber(page - 1)))
+            })
+            .collect();
+        keyboard.push(row);
+    }
+
+    InlineKeyboardMarkup::new(keyboard)
 }

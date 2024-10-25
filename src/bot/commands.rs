@@ -1,3 +1,5 @@
+use crate::bot::commands::MainCommands::Menu;
+use crate::bot::inline_keyboards::PageNumber;
 use strum::{AsRefStr, EnumString};
 use teloxide::utils::command::BotCommands;
 
@@ -11,7 +13,7 @@ pub enum MainCommands {
 #[derive(AsRefStr, EnumString, Debug)]
 #[repr(i32)]
 pub enum MenuCommands {
-    #[strum(to_string = "col")]
+    #[strum(to_string = "mai")]
     MainMenu = 0,
     #[strum(to_string = "col")]
     CocktailsList(u64) = 1,
@@ -23,12 +25,12 @@ pub enum MenuCommands {
     ProfilePage = 4,
     #[strum(serialize = "sbi")]
     SearchById(String) = 5,
-    #[strum(serialize = "sbi")]
+    #[strum(serialize = "ncp")]
     NextCocktailsPage(u64) = 6,
-    #[strum(serialize = "sbi")]
+    #[strum(serialize = "pcp")]
     PreviousCocktailsPage(u64) = 7,
-    #[strum(serialize = "sbi")]
-    CocktailsPages = 8,
+    #[strum(serialize = "cop")]
+    CocktailsPages(u64) = 8,
 
     Unknown = 99999,
 }
@@ -41,8 +43,8 @@ impl MenuCommands {
         if cmd == MenuCommands::MainMenu.as_ref() {
             MenuCommands::MainMenu
         } else if cmd == MenuCommands::CocktailsList(0).as_ref() {
-            let int_param = param.parse().unwrap_or_default();
-            MenuCommands::CocktailsList(int_param)
+            let ulong_param = param.parse().unwrap_or_default();
+            MenuCommands::CocktailsList(ulong_param)
         } else if cmd == MenuCommands::SearchByName.as_ref() {
             MenuCommands::SearchByName
         } else if cmd == MenuCommands::Register.as_ref() {
@@ -57,11 +59,25 @@ impl MenuCommands {
         } else if cmd == MenuCommands::PreviousCocktailsPage(0).as_ref() {
             let ulong_param = param.parse().unwrap_or_default();
             MenuCommands::PreviousCocktailsPage(ulong_param)
-        } else if cmd == MenuCommands::CocktailsPages.as_ref() {
-            MenuCommands::CocktailsPages
-        }
-        else {
+        } else if cmd == MenuCommands::CocktailsPages(0).as_ref() {
+            let ulong_param = param.parse().unwrap_or_default();
+            MenuCommands::CocktailsPages(ulong_param)
+        } else {
             MenuCommands::Unknown
         }
+    }
+
+    pub fn get_cocktails_list_command_string(page: &PageNumber) -> String {
+        let cocktail_list_command = String::from(MenuCommands::CocktailsList(0).as_ref());
+        format!("{}{}", cocktail_list_command, page.0.to_string())
+    }
+
+    pub fn get_main_menu_command_string() -> String {
+        String::from(MenuCommands::MainMenu.as_ref())
+    }
+
+    pub fn get_cocktail_pages_command_string(total_pages: &u64) -> String {
+        let cocktail_pages_command = String::from(MenuCommands::CocktailsPages(0).as_ref());
+        format!("{}{}", cocktail_pages_command, total_pages.to_string())
     }
 }

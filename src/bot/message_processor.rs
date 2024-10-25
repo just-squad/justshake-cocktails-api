@@ -2,6 +2,7 @@ use anyhow::{Context, Result};
 use std::error::Error;
 
 use super::inline_keyboards;
+use crate::bot::inline_keyboards::PageNumber;
 use crate::{
     bot::TgBotProvider,
     domain::{
@@ -94,22 +95,33 @@ where
             },
         };
         let _cocktails_names = self.cocktail_repo.get_names(&cocktails_filter).await?;
-        let keyboard =
-            inline_keyboards::get_cocktails_list_keyboard(&_cocktails_names, next_page, &page_size);
-
-        let edit_message_text = EditMessageText {
-            chat_id: Recipient::from(chat_id.clone()),
-            message_id: message_id.clone(),
-            text: "Коктейли: ".to_string(),
-            parse_mode: Some(ParseMode::MarkdownV2),
-            entities: None,
-            link_preview_options: None,
-            reply_markup: Some(keyboard.clone()),
-        };
+        let keyboard = inline_keyboards::get_cocktails_list_keyboard(
+            &_cocktails_names,
+            &PageNumber(next_page.clone()),
+            &page_size,
+        );
         let mut edit_message_text =
             self.bot_provider
                 .bot
                 .edit_message_text(*chat_id, *message_id, "Коктейли: ");
+        edit_message_text = edit_message_text.reply_markup(keyboard.clone());
+        edit_message_text.await?;
+
+        Ok(())
+    }
+
+    pub async fn send_cocktails_pages(
+        &self,
+        _user_id: &UserId,
+        chat_id: &ChatId,
+        message_id: &MessageId,
+        total_pages: &u64,
+    ) -> Result<(), Box<dyn Error + Send + Sync>> {
+        let keyboard = inline_keyboards::get_cocktail_pages_keyboard(total_pages);
+        let mut edit_message_text =
+            self.bot_provider
+                .bot
+                .edit_message_text(*chat_id, *message_id, "Доступные страницы: ");
         edit_message_text = edit_message_text.reply_markup(keyboard.clone());
         edit_message_text.await?;
 
