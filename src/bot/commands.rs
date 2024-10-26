@@ -1,5 +1,6 @@
 use crate::bot::commands::MainCommands::Menu;
 use crate::bot::inline_keyboards::PageNumber;
+use chrono::format;
 use strum::{AsRefStr, EnumString};
 use teloxide::utils::command::BotCommands;
 
@@ -69,7 +70,7 @@ impl MenuCommands {
 
     pub fn get_cocktails_list_command_string(page: &PageNumber) -> String {
         let cocktail_list_command = String::from(MenuCommands::CocktailsList(0).as_ref());
-        format!("{}{}", cocktail_list_command, page.0.to_string())
+        format!("{}{}", cocktail_list_command, page.0)
     }
 
     pub fn get_main_menu_command_string() -> String {
@@ -78,6 +79,11 @@ impl MenuCommands {
 
     pub fn get_cocktail_pages_command_string(total_pages: &u64) -> String {
         let cocktail_pages_command = String::from(MenuCommands::CocktailsPages(0).as_ref());
-        format!("{}{}", cocktail_pages_command, total_pages.to_string())
+        format!("{}{}", cocktail_pages_command, total_pages)
+    }
+
+    pub fn get_cocktail_by_id_command_string(cocktail_id: &uuid::Uuid)-> String{
+        let cocktail_by_id_command = String::from(MenuCommands::SearchById("".to_owned()).as_ref());
+        format!("{}{}", cocktail_by_id_command, cocktail_id)
     }
 }

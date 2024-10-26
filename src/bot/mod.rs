@@ -92,7 +92,9 @@ async fn main_commands_handler(
             let chat_id = msg
                 .chat_id()
                 .expect("Can't get chat id from telegram message");
-            processor.send_menu_to_user(&user_id, &chat_id).await?;
+            processor
+                .send_menu_to_user(&user_id, &chat_id, &msg.id, false)
+                .await?;
         }
     };
     Ok(())
@@ -129,13 +131,22 @@ async fn callback_handler(
         let menu_cmd = MenuCommands::parse(callback_btn);
         match menu_cmd {
             MenuCommands::MainMenu => {
-                let _message_proc = MessageProcessor::new().await;
+                let message_proc = MessageProcessor::new().await?;
+                let message_id = callback.clone().message.unwrap().id();
+                message_proc
+                    .send_menu_to_user(&user_id, &callback.chat_id().unwrap(), &message_id, true)
+                    .await?;
             }
             MenuCommands::CocktailsList(page) => {
                 let message_proc = MessageProcessor::new().await?;
                 let message_id = callback.clone().message.unwrap().id();
                 message_proc
-                    .send_cocktails_paged(&user_id, &callback.chat_id().unwrap(), &message_id, &page)
+                    .send_cocktails_paged(
+                        &user_id,
+                        &callback.chat_id().unwrap(),
+                        &message_id,
+                        &page,
+                    )
                     .await?;
             }
             MenuCommands::SearchByName => {
@@ -145,25 +156,31 @@ async fn callback_handler(
                     .await?;
             }
             MenuCommands::Register => {
-                let _message_proc = MessageProcessor::new().await;
+                let _message_proc = MessageProcessor::new().await?;
             }
             MenuCommands::ProfilePage => {
-                let _message_proc = MessageProcessor::new().await;
+                let _message_proc = MessageProcessor::new().await?;
             }
             MenuCommands::SearchById(_) => {
-                let _message_proc = MessageProcessor::new().await;
+                let _message_proc = MessageProcessor::new().await?;
+                
             }
             MenuCommands::NextCocktailsPage(_) => {
-                let _message_proc = MessageProcessor::new().await;
+                let _message_proc = MessageProcessor::new().await?;
             }
             MenuCommands::PreviousCocktailsPage(_) => {
-                let _message_proc = MessageProcessor::new().await;
+                let _message_proc = MessageProcessor::new().await?;
             }
             MenuCommands::CocktailsPages(total_pages) => {
                 let message_proc = MessageProcessor::new().await?;
                 let message_id = callback.clone().message.unwrap().id();
                 message_proc
-                    .send_cocktails_pages(&user_id, &callback.chat_id().unwrap(), &message_id, &total_pages)
+                    .send_cocktails_pages(
+                        &user_id,
+                        &callback.chat_id().unwrap(),
+                        &message_id,
+                        &total_pages,
+                    )
                     .await?;
             }
             MenuCommands::Unknown => todo!(),

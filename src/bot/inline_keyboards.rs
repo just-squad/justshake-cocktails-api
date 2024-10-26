@@ -88,10 +88,9 @@ pub fn get_cocktails_list_keyboard(
         let row = cocktail_info
             .iter()
             .map(|cocktail_info| {
-                let callback = MenuCommands::SearchById(cocktail_info.id.to_string());
                 InlineKeyboardButton::callback(
                     cocktail_info.russian_name.to_owned(),
-                    callback.as_ref(),
+                    MenuCommands::get_cocktail_by_id_command_string(&cocktail_info.id),
                 )
             })
             .collect();
@@ -109,7 +108,10 @@ pub fn get_cocktails_list_keyboard(
 
     let navigate_line: Vec<InlineKeyboardButton> = if current_page.0 == 0 {
         vec![
-            InlineKeyboardButton::callback(page_counter_text.clone(), MenuCommands::get_cocktail_pages_command_string(&(available_pages))),
+            InlineKeyboardButton::callback(
+                page_counter_text.clone(),
+                MenuCommands::get_cocktail_pages_command_string(&(available_pages)),
+            ),
             InlineKeyboardButton::callback(
                 "👉",
                 MenuCommands::get_cocktails_list_command_string(&current_page.next()),
@@ -121,7 +123,10 @@ pub fn get_cocktails_list_keyboard(
                 "👈",
                 MenuCommands::get_cocktails_list_command_string(&current_page.previous()),
             ),
-            InlineKeyboardButton::callback(page_counter_text.clone(), MenuCommands::get_cocktail_pages_command_string(&(available_pages))),
+            InlineKeyboardButton::callback(
+                page_counter_text.clone(),
+                MenuCommands::get_cocktail_pages_command_string(&(available_pages)),
+            ),
         ]
     } else {
         vec![
@@ -129,7 +134,10 @@ pub fn get_cocktails_list_keyboard(
                 "👈",
                 MenuCommands::get_cocktails_list_command_string(&current_page.previous()),
             ),
-            InlineKeyboardButton::callback(page_counter_text.clone(), MenuCommands::get_cocktail_pages_command_string(&(available_pages))),
+            InlineKeyboardButton::callback(
+                page_counter_text.clone(),
+                MenuCommands::get_cocktail_pages_command_string(&(available_pages)),
+            ),
             InlineKeyboardButton::callback(
                 "👉",
                 MenuCommands::get_cocktails_list_command_string(&current_page.next()),
@@ -147,14 +155,18 @@ pub fn get_cocktails_list_keyboard(
 
 pub fn get_cocktail_pages_keyboard(total_pages: &u64) -> InlineKeyboardMarkup {
     let from_page: u64 = 1;
-    let pages = Vec::from_iter(from_page..total_pages.clone());
+    let to_page = total_pages + 1;
+    let pages = Vec::from_iter(from_page..to_page);
 
     let mut keyboard: Vec<Vec<InlineKeyboardButton>> = vec![];
     for page_line in pages.chunks(4) {
         let row = page_line
             .iter()
             .map(|page| {
-                InlineKeyboardButton::callback(page.to_string(), MenuCommands::get_cocktails_list_command_string(&PageNumber(page - 1)))
+                InlineKeyboardButton::callback(
+                    page.to_string(),
+                    MenuCommands::get_cocktails_list_command_string(&PageNumber(page - 1)),
+                )
             })
             .collect();
         keyboard.push(row);

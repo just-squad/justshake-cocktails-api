@@ -14,9 +14,8 @@ use crate::{
     },
     infrastructure,
 };
-use teloxide::payloads::{EditMessageText, EditMessageTextInlineSetters, EditMessageTextSetters};
-use teloxide::types::{MessageId, ParseMode, Recipient};
-use teloxide::utils::markdown::escape;
+use teloxide::payloads::EditMessageTextSetters;
+use teloxide::types::MessageId;
 use teloxide::{
     payloads::SendMessageSetters,
     prelude::Requester,
@@ -66,15 +65,26 @@ where
         &self,
         user_id: &UserId,
         chat_id: &ChatId,
+        message_id: &MessageId,
+        edit_message: bool,
     ) -> Result<(), Box<dyn Error + Send + Sync>> {
         let user_registered = self.user_repo.is_exist_by_telegram_id(&user_id.0).await?;
         let keyboard = inline_keyboards::get_main_menu_keyboard(&user_registered);
 
-        self.bot_provider
-            .bot
-            .send_message(*chat_id, "Основное меню:")
-            .reply_markup(keyboard)
-            .await?;
+        if edit_message {
+            let mut edit_message_text =
+                self.bot_provider
+                    .bot
+                    .edit_message_text(*chat_id, *message_id, "Основное меню: ");
+            edit_message_text = edit_message_text.reply_markup(keyboard.clone());
+            edit_message_text.await?;
+        } else {
+            self.bot_provider
+                .bot
+                .send_message(*chat_id, "Основное меню:")
+                .reply_markup(keyboard)
+                .await?;
+        }
 
         Ok(())
     }
@@ -90,14 +100,14 @@ where
         let cocktails_filter = CocktailNamesFilter {
             ids: vec![],
             pagination: Pagination {
-                page: next_page.clone(),
-                items_per_page: page_size.clone(),
+                page: *next_page,
+                items_per_page: page_size,
             },
         };
         let _cocktails_names = self.cocktail_repo.get_names(&cocktails_filter).await?;
         let keyboard = inline_keyboards::get_cocktails_list_keyboard(
             &_cocktails_names,
-            &PageNumber(next_page.clone()),
+            &PageNumber(*next_page),
             &page_size,
         );
         let mut edit_message_text =
