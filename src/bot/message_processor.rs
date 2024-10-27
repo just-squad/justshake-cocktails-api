@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
-use std::error::Error;
+use teloxide::utils::markdown::escape;
 
+use super::commands::MenuCommands;
 use super::inline_keyboards;
 use crate::bot::inline_keyboards::PageNumber;
 use crate::{
@@ -67,7 +68,7 @@ where
         chat_id: &ChatId,
         message_id: &MessageId,
         edit_message: bool,
-    ) -> Result<(), Box<dyn Error + Send + Sync>> {
+    ) -> Result<()> {
         let user_registered = self.user_repo.is_exist_by_telegram_id(&user_id.0).await?;
         let keyboard = inline_keyboards::get_main_menu_keyboard(&user_registered);
 
@@ -95,7 +96,7 @@ where
         chat_id: &ChatId,
         message_id: &MessageId,
         next_page: &u64,
-    ) -> Result<(), Box<dyn Error + Send + Sync>> {
+    ) -> Result<()> {
         let page_size: u64 = 10;
         let cocktails_filter = CocktailNamesFilter {
             ids: vec![],
@@ -126,7 +127,7 @@ where
         chat_id: &ChatId,
         message_id: &MessageId,
         total_pages: &u64,
-    ) -> Result<(), Box<dyn Error + Send + Sync>> {
+    ) -> Result<()> {
         let keyboard = inline_keyboards::get_cocktail_pages_keyboard(total_pages);
         let mut edit_message_text =
             self.bot_provider
@@ -140,43 +141,47 @@ where
 
     pub async fn send_cocktail_page(
         &self,
+        prev_page: &MenuCommands,
         chat_id: &ChatId,
         message_id: &MessageId,
         cocktail_id: &uuid::Uuid,
-    ) -> Result<(), Box<dyn Error + Send + Sync>> {
+    ) -> Result<()> {
         let cocktail = self.cocktail_repo.get_by_id(cocktail_id).await?;
         match cocktail {
             Some(cock) => {
-                let result_string = format!("🍸<b>Коктейль:</b> {}\n", cock.russian_name);
-                //result_string.push_str(format!("<b>Английское название:</b> {}\n", cocktail.name));
-                //result_string.push_str("\n<b>Ингредиенты:</b>\n");
-                //for _, element := range res.CompositionElements {
-                //	resultString = resultString + fmt.Sprintf("👉 %+v %+v%+v\n", element.Name, element.Count, element.Unit)
-                //}
-                //resultString = resultString + fmt.Sprintf("\n<b>Требуемые инструменты:</b>\n")
-                //for _, element := range res.Tools {
-                //	resultString = resultString + fmt.Sprintf("👉 %+v %+v%+v\n", element.Name, element.Count, element.Unit)
-                //}
-                //resultString = resultString + fmt.Sprintf("\n<b>Способ приготовления:</b>\n")
-                //for i, element := range res.Recipe.Steps {
-                //	resultString = resultString + fmt.Sprintf("%+v. %+v\n", i+1, element)
-                //}
-                //resultString = resultString + fmt.Sprintf("\n<b>История под этого коктейль:</b>\n")
-                //resultString = resultString + res.History
-                //resultString = resultString + fmt.Sprintf("\n\n<b>Теги:</b>\n")
-                //for _, element := range res.Tags {
-                //	resultString = resultString + fmt.Sprintf("#%+v ", element.Name)
-                //}
+                let mut result_string = format!("🍸*Коктейль:* {}\n", escape(&cock.russian_name));
+                result_string.push_str(&format!("*Английское название:* {}\n", escape(&cock.name.unwrap())));
+                result_string.push_str("\n*Ингредиенты:*\n");
+                for com_el in cock.composition_elements.unwrap() {
+                	result_string.push_str(&format!("👉 {} {}{}\n", escape(&com_el.name), com_el.count, escape(&com_el.unit)));
+                }
+                result_string.push_str("\n*Требуемые инструменты:*\n");
+                for tool in cock.tools.unwrap() {
+                	result_string.push_str(&format!("👉 {} {}{}\n", escape(&tool.name), tool.count, escape(&tool.unit)));
+                }
+                result_string.push_str("\n*Способ приготовления:*\n");
+                for (i, recipe_step) in cock.recipe.unwrap().steps.iter().enumerate() {
+                	result_string.push_str(&format!("{}\\. {}\n", i+1, escape(recipe_step)));
+                }
+                result_string.push_str("\n*История для этого коктейля:*\n");
+                result_string.push_str(&escape(&cock.history.unwrap()));
+                result_string.push_str("\n\n*Теги:*\n");
+                for tag in cock.tags.unwrap() {
+                	result_string.push_str(&format!("\\#{} ", tag.name.replace(" ", "\\_")));
+                }
 
-                let edit_message_text =
-                    self.bot_provider
-                        .bot
-                        .edit_message_text(*chat_id, *message_id, result_string);
+                let mut edit_message_text = self.bot_provider.bot.edit_message_text(
+                    *chat_id,
+                    *message_id,
+                    &result_string,
+                );
+                let keyboard = inline_keyboards::get_cocktail_card_navigate_keyboard(prev_page);
+                edit_message_text = edit_message_text.reply_markup(keyboard);
 
                 edit_message_text.await?;
                 Ok(())
             }
-            None => Err("Cocktail not found"),
+            None => panic!("Coctail not found"),
         }
     }
 
@@ -184,7 +189,7 @@ where
         &self,
         _user_id: &UserId,
         _chat_id: &ChatId,
-    ) -> Result<(), Box<dyn Error + Send + Sync>> {
+    ) -> Result<()> {
         Ok(())
     }
 }

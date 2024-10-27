@@ -23,7 +23,7 @@ pub enum MenuCommands {
     #[strum(serialize = "prp")]
     ProfilePage = 4,
     #[strum(serialize = "sbi")]
-    SearchById(String) = 5,
+    SearchById(String, String) = 5,
     #[strum(serialize = "cop")]
     CocktailsPages(u64) = 6,
 
@@ -33,7 +33,7 @@ pub enum MenuCommands {
 impl MenuCommands {
     pub fn parse(s: &str) -> Self {
         let cmd = s.get(..3).unwrap_or_default();
-        let param = s.get(3..).unwrap_or_default();
+        let param = s.get(3..).unwrap_or_default().trim();
 
         if cmd == MenuCommands::MainMenu.as_ref() {
             MenuCommands::MainMenu
@@ -46,8 +46,9 @@ impl MenuCommands {
             MenuCommands::Register
         } else if cmd == MenuCommands::ProfilePage.as_ref() {
             MenuCommands::ProfilePage
-        } else if cmd == MenuCommands::SearchById(String::new()).as_ref() {
-            MenuCommands::SearchById(param.to_string())
+        } else if cmd == MenuCommands::SearchById(String::new(), String::new()).as_ref() {
+            let params: Vec<&str> = param.split(" ").collect();
+            MenuCommands::SearchById(params[0].to_string(), params[1].to_string())
         } else if cmd == MenuCommands::CocktailsPages(0).as_ref() {
             let ulong_param = param.parse().unwrap_or_default();
             MenuCommands::CocktailsPages(ulong_param)
@@ -70,8 +71,9 @@ impl MenuCommands {
         format!("{}{}", cocktail_pages_command, total_pages)
     }
 
-    pub fn get_cocktail_by_id_command_string(cocktail_id: &uuid::Uuid) -> String {
-        let cocktail_by_id_command = String::from(MenuCommands::SearchById("".to_owned()).as_ref());
-        format!("{}{}", cocktail_by_id_command, cocktail_id)
+    pub fn get_cocktail_by_id_command_string(cocktail_id: &uuid::Uuid, source_page: &MenuCommands) -> String {
+        let cocktail_by_id_command = String::from(MenuCommands::SearchById("".to_owned(), "".to_owned()).as_ref());
+        let prev_page_command = String::from(source_page.as_ref());
+        format!("{} {} {}", cocktail_by_id_command, cocktail_id, prev_page_command)
     }
 }

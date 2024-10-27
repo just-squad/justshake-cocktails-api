@@ -1,6 +1,5 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use std::error::Error;
 
 use mongodb::bson::doc;
 
@@ -57,7 +56,7 @@ impl UserRepo for UserRepository {
     async fn get_by_telegram_id(
         &self,
         telegram_user_id: &u64,
-    ) -> Result<User, Box<dyn Error + Send + Sync>> {
+    ) -> Result<User> {
         let user = self
             .db_client
             .get_users_collection()
@@ -77,7 +76,7 @@ impl UserRepo for UserRepository {
     async fn is_exist_by_telegram_id(
         &self,
         telegram_user_id: &u64,
-    ) -> Result<bool, Box<dyn Error + Send + Sync>> {
+    ) -> Result<bool> {
         let user = self
             .db_client
             .get_users_collection()

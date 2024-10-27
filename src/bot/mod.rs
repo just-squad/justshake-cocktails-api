@@ -161,11 +161,12 @@ async fn callback_handler(
             MenuCommands::ProfilePage => {
                 let _message_proc = MessageProcessor::new().await?;
             }
-            MenuCommands::SearchById(cocktail_id) => {
+            MenuCommands::SearchById(cocktail_id, prev_page) => {
                 let message_proc = MessageProcessor::new().await?;
                 let message_id = callback.clone().message.unwrap().id();
                 message_proc
                     .send_cocktail_page(
+                        &MenuCommands::parse(&prev_page),
                         &callback.chat_id().unwrap(),
                         &message_id,
                         &uuid::Uuid::parse_str(cocktail_id.as_str()).unwrap(),

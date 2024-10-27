@@ -90,7 +90,10 @@ pub fn get_cocktails_list_keyboard(
             .map(|cocktail_info| {
                 InlineKeyboardButton::callback(
                     cocktail_info.russian_name.to_owned(),
-                    MenuCommands::get_cocktail_by_id_command_string(&cocktail_info.id),
+                    MenuCommands::get_cocktail_by_id_command_string(
+                        &cocktail_info.id,
+                        &MenuCommands::CocktailsList(0),
+                    ),
                 )
             })
             .collect();
@@ -171,6 +174,28 @@ pub fn get_cocktail_pages_keyboard(total_pages: &u64) -> InlineKeyboardMarkup {
             .collect();
         keyboard.push(row);
     }
+
+    InlineKeyboardMarkup::new(keyboard)
+}
+
+pub fn get_cocktail_card_navigate_keyboard(prev_page: &MenuCommands) -> InlineKeyboardMarkup {
+    let mut keyboard: Vec<Vec<InlineKeyboardButton>> = vec![];
+
+    let mut navigate_row: Vec<InlineKeyboardButton> = vec![];
+    let prev_page_command_string = match prev_page {
+        MenuCommands::CocktailsList(_) => {
+            MenuCommands::get_cocktails_list_command_string(&PageNumber(0))
+        }
+        MenuCommands::MainMenu => todo!(),
+        MenuCommands::SearchByName => todo!(),
+        MenuCommands::Register => todo!(),
+        MenuCommands::ProfilePage => todo!(),
+        MenuCommands::SearchById(_, _) => todo!(),
+        MenuCommands::CocktailsPages(_) => todo!(),
+        MenuCommands::Unknown => todo!(),
+    };
+    navigate_row.push(InlineKeyboardButton::callback("👈 Назад", prev_page_command_string));
+    keyboard.push(navigate_row);
 
     InlineKeyboardMarkup::new(keyboard)
 }

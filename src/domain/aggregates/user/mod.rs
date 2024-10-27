@@ -1,3 +1,4 @@
+use anyhow::Result;
 use async_trait::async_trait;
 use std::error::Error;
 
@@ -23,10 +24,10 @@ pub trait UserRepo {
     async fn get_by_telegram_id(
         &self,
         telegram_user_id: &u64,
-    ) -> Result<User, Box<dyn Error + Sync + Send>>;
+    ) -> Result<User>;
     /// .
     async fn is_exist_by_telegram_id(
         &self,
         telegram_user_id: &u64,
-    ) -> Result<bool, Box<dyn Error + Sync + Send>>;
+    ) -> Result<bool>;
 }
