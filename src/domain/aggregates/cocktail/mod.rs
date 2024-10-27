@@ -1,9 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use std::error::Error;
-use std::fmt;
-use std::fmt::Formatter;
 use uuid::Uuid;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -44,7 +41,7 @@ pub trait CocktailRepo {
     /// .
     async fn get_names(&self, filter: &CocktailNamesFilter) -> Result<CocktailsPaged>;
     /// .
-    async fn get_by_id(&self, id: &Uuid) -> Result<Cocktail>;
+    async fn get_by_id(&self, id: &Uuid) -> Result<Option<Cocktail>>;
     /// .
     async fn get_by_filter(&self, filter: &CocktailFilter) -> Result<CocktailsPaged>;
 }

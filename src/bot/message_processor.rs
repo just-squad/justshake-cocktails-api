@@ -138,6 +138,48 @@ where
         Ok(())
     }
 
+    pub async fn send_cocktail_page(
+        &self,
+        chat_id: &ChatId,
+        message_id: &MessageId,
+        cocktail_id: &uuid::Uuid,
+    ) -> Result<(), Box<dyn Error + Send + Sync>> {
+        let cocktail = self.cocktail_repo.get_by_id(cocktail_id).await?;
+        match cocktail {
+            Some(cock) => {
+                let result_string = format!("🍸<b>Коктейль:</b> {}\n", cock.russian_name);
+                //result_string.push_str(format!("<b>Английское название:</b> {}\n", cocktail.name));
+                //result_string.push_str("\n<b>Ингредиенты:</b>\n");
+                //for _, element := range res.CompositionElements {
+                //	resultString = resultString + fmt.Sprintf("👉 %+v %+v%+v\n", element.Name, element.Count, element.Unit)
+                //}
+                //resultString = resultString + fmt.Sprintf("\n<b>Требуемые инструменты:</b>\n")
+                //for _, element := range res.Tools {
+                //	resultString = resultString + fmt.Sprintf("👉 %+v %+v%+v\n", element.Name, element.Count, element.Unit)
+                //}
+                //resultString = resultString + fmt.Sprintf("\n<b>Способ приготовления:</b>\n")
+                //for i, element := range res.Recipe.Steps {
+                //	resultString = resultString + fmt.Sprintf("%+v. %+v\n", i+1, element)
+                //}
+                //resultString = resultString + fmt.Sprintf("\n<b>История под этого коктейль:</b>\n")
+                //resultString = resultString + res.History
+                //resultString = resultString + fmt.Sprintf("\n\n<b>Теги:</b>\n")
+                //for _, element := range res.Tags {
+                //	resultString = resultString + fmt.Sprintf("#%+v ", element.Name)
+                //}
+
+                let edit_message_text =
+                    self.bot_provider
+                        .bot
+                        .edit_message_text(*chat_id, *message_id, result_string);
+
+                edit_message_text.await?;
+                Ok(())
+            }
+            None => Err("Cocktail not found"),
+        }
+    }
+
     pub async fn send_cocktails_paged_filter_by_name(
         &self,
         _user_id: &UserId,

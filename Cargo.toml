@@ -20,6 +20,7 @@ futures="0.3.30"
 async-trait="0.1.83"
 strum={version = "0.26", features = ["derive"]}
 thiserror={version="1.0"}
+bson = {version = "2.13", features = ["uuid-1", "serde_with-3"]}
 
 # infrastructure connections
 

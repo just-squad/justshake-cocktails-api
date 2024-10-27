@@ -29,8 +29,6 @@ impl MongoDbClient {
                     cfg.mongo_username, cfg.mongo_password, cfg.mongo_host, cfg.mongo_port
                 )
             };
-        log::info!("Create mongo db connection with connection string {mongo_connection_string}");
-
         let mongodb_client = Client::with_uri_str(&mongo_connection_string)
             .await
             .context("failed to create mongodb client")?;
@@ -72,7 +70,6 @@ where
                 .to_owned(),
         )
     }
-    // add code here
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -139,32 +136,16 @@ impl From<Cocktail> for CocktailDbModel {
             russian_name: value.russian_name,
             country_of_origin: value.country_of_origin,
             history: value.history,
-            tags: match value.tags {
-                Some(tags) => Some(tags.iter().map(|x| TagDbModel::from(x.clone())).collect()),
-                None => None,
-            },
-            tools: match value.tools {
-                Some(tools) => Some(
-                    tools
+            tags: value.tags.map(|tags| tags.iter().map(|x| TagDbModel::from(x.clone())).collect()),
+            tools: value.tools.map(|tools| tools
                         .iter()
                         .map(|x| CocktailItemDbModel::from(x.clone()))
-                        .collect(),
-                ),
-                None => None,
-            },
-            composition_elements: match value.composition_elements {
-                Some(composition_elements) => Some(
-                    composition_elements
+                        .collect()),
+            composition_elements: value.composition_elements.map(|composition_elements| composition_elements
                         .iter()
                         .map(|x| CocktailItemDbModel::from(x.clone()))
-                        .collect(),
-                ),
-                None => None,
-            },
-            recipe: match value.recipe {
-                Some(recipe) => Some(RecipeDbModel::from(recipe)),
-                None => None,
-            },
+                        .collect()),
+            recipe: value.recipe.map(RecipeDbModel::from),
         }
     }
 }
@@ -178,27 +159,13 @@ impl Into<Cocktail> for CocktailDbModel {
             russian_name: self.russian_name,
             country_of_origin: self.country_of_origin,
             history: self.history,
-            tags: match self.tags {
-                Some(tags) => Some(tags.iter().map(|x| Into::into(x.clone())).collect()),
-                None => None,
-            },
-            tools: match self.tools {
-                Some(tags) => Some(tags.iter().map(|x| Into::into(x.clone())).collect()),
-                None => None,
-            },
-            composition_elements: match self.composition_elements {
-                Some(composition_elements) => Some(
-                    composition_elements
+            tags: self.tags.map(|tags| tags.iter().map(|x| Into::into(x.clone())).collect()),
+            tools: self.tools.map(|tags| tags.iter().map(|x| Into::into(x.clone())).collect()),
+            composition_elements: self.composition_elements.map(|composition_elements| composition_elements
                         .iter()
                         .map(|x| Into::into(x.clone()))
-                        .collect(),
-                ),
-                None => None,
-            },
-            recipe: match self.recipe {
-                Some(recipe) => Some(recipe.into()),
-                None => None,
-            },
+                        .collect()),
+            recipe: self.recipe.map(|recipe| recipe.into()),
         }
     }
 }

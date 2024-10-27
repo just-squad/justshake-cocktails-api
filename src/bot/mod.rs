@@ -161,15 +161,16 @@ async fn callback_handler(
             MenuCommands::ProfilePage => {
                 let _message_proc = MessageProcessor::new().await?;
             }
-            MenuCommands::SearchById(_) => {
-                let _message_proc = MessageProcessor::new().await?;
-                
-            }
-            MenuCommands::NextCocktailsPage(_) => {
-                let _message_proc = MessageProcessor::new().await?;
-            }
-            MenuCommands::PreviousCocktailsPage(_) => {
-                let _message_proc = MessageProcessor::new().await?;
+            MenuCommands::SearchById(cocktail_id) => {
+                let message_proc = MessageProcessor::new().await?;
+                let message_id = callback.clone().message.unwrap().id();
+                message_proc
+                    .send_cocktail_page(
+                        &callback.chat_id().unwrap(),
+                        &message_id,
+                        &uuid::Uuid::parse_str(cocktail_id.as_str()).unwrap(),
+                    )
+                    .await?;
             }
             MenuCommands::CocktailsPages(total_pages) => {
                 let message_proc = MessageProcessor::new().await?;

@@ -1,9 +1,7 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use mongodb::bson::doc;
-use mongodb::bson::Bson::Document;
 use tokio_stream::StreamExt;
-use uuid::Uuid;
 
 use crate::{
     domain::aggregates::cocktail::{
@@ -40,8 +38,7 @@ impl CocktailRepo for CocktailRepository {
     }
 
     async fn get_names(&self, filter: &CocktailNamesFilter) -> Result<CocktailsPaged> {
-        let doc = mongodb::bson::Document::new();
-        let filter_document = if filter.ids.len() > 0 {
+        let filter_document = if !filter.ids.is_empty() {
             let uuids_doc: Vec<mongodb::bson::Document> = filter
                 .ids
                 .iter()
@@ -81,21 +78,16 @@ impl CocktailRepo for CocktailRepository {
         Ok(result)
     }
 
-    async fn get_by_id(&self, id: &Uuid) -> Result<Cocktail> {
+    async fn get_by_id(&self, id: &uuid::Uuid) -> Result<Option<Cocktail>> {
         let cocktail_collection = self.db_client.get_cocktails_collection();
+        //let _uuid_bson = mongodb::bson::to_document(&bson::Uuid::from(*id)).unwrap();
+        let uuid_mongo = mongodb::bson::Uuid::parse_str(id.to_string()).unwrap();
 
-        let cocktail_result = cocktail_collection
-            .find_one(doc! {"telegram_id": id.to_string()})
-            .await?;
-        let cocktail = match cocktail_result {
-            Some(u) => u,
-            None => {
-                log::error!("Coctail with id {id} not found.");
-                panic!("Coctail with id {id} not found");
-            }
-        };
-
-        Ok(cocktail.into())
+        cocktail_collection
+            .find_one(doc! {"id": &uuid_mongo})
+            .await
+            .map(|x| x.map(|x| x.into()))
+            .context(format!("Coctail with id {} not found", uuid_mongo))
     }
 
     async fn get_by_filter(&self, _filter: &CocktailFilter) -> Result<CocktailsPaged> {

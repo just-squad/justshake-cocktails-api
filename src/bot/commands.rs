@@ -1,6 +1,4 @@
-use crate::bot::commands::MainCommands::Menu;
 use crate::bot::inline_keyboards::PageNumber;
-use chrono::format;
 use strum::{AsRefStr, EnumString};
 use teloxide::utils::command::BotCommands;
 
@@ -26,12 +24,8 @@ pub enum MenuCommands {
     ProfilePage = 4,
     #[strum(serialize = "sbi")]
     SearchById(String) = 5,
-    #[strum(serialize = "ncp")]
-    NextCocktailsPage(u64) = 6,
-    #[strum(serialize = "pcp")]
-    PreviousCocktailsPage(u64) = 7,
     #[strum(serialize = "cop")]
-    CocktailsPages(u64) = 8,
+    CocktailsPages(u64) = 6,
 
     Unknown = 99999,
 }
@@ -54,12 +48,6 @@ impl MenuCommands {
             MenuCommands::ProfilePage
         } else if cmd == MenuCommands::SearchById(String::new()).as_ref() {
             MenuCommands::SearchById(param.to_string())
-        } else if cmd == MenuCommands::NextCocktailsPage(0).as_ref() {
-            let ulong_param = param.parse().unwrap_or_default();
-            MenuCommands::NextCocktailsPage(ulong_param)
-        } else if cmd == MenuCommands::PreviousCocktailsPage(0).as_ref() {
-            let ulong_param = param.parse().unwrap_or_default();
-            MenuCommands::PreviousCocktailsPage(ulong_param)
         } else if cmd == MenuCommands::CocktailsPages(0).as_ref() {
             let ulong_param = param.parse().unwrap_or_default();
             MenuCommands::CocktailsPages(ulong_param)
@@ -82,7 +70,7 @@ impl MenuCommands {
         format!("{}{}", cocktail_pages_command, total_pages)
     }
 
-    pub fn get_cocktail_by_id_command_string(cocktail_id: &uuid::Uuid)-> String{
+    pub fn get_cocktail_by_id_command_string(cocktail_id: &uuid::Uuid) -> String {
         let cocktail_by_id_command = String::from(MenuCommands::SearchById("".to_owned()).as_ref());
         format!("{}{}", cocktail_by_id_command, cocktail_id)
     }
