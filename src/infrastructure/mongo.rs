@@ -81,7 +81,7 @@ pub struct Insert<T> {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct UserDbModel {
     pub id: String,
-    pub telegram_id: u64,
+    pub telegram_id: String,
     pub favorite_cocktails: Vec<String>,
 }
 
@@ -89,7 +89,7 @@ impl From<User> for UserDbModel {
     fn from(value: User) -> Self {
         UserDbModel {
             id: value.id.to_string(),
-            telegram_id: value.telegram_id,
+            telegram_id: value.telegram_id.to_string(),
             favorite_cocktails: value
                 .favorite_cocktails
                 .iter()
@@ -103,7 +103,7 @@ impl Into<User> for UserDbModel {
     fn into(self) -> User {
         User {
             id: Uuid::parse_str(&self.id).unwrap(),
-            telegram_id: self.telegram_id,
+            telegram_id: self.telegram_id.parse().unwrap(),
             favorite_cocktails: self
                 .favorite_cocktails
                 .iter()

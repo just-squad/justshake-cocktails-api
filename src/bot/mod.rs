@@ -156,7 +156,11 @@ async fn callback_handler(
                     .await?;
             }
             MenuCommands::Register => {
-                let _message_proc = MessageProcessor::new().await?;
+                let message_proc = MessageProcessor::new().await?;
+                let message_id = callback.clone().message.unwrap().id();
+                message_proc
+                    .register_user(&user_id, &callback.chat_id().unwrap(), &message_id)
+                    .await?;
             }
             MenuCommands::ProfilePage => {
                 let _message_proc = MessageProcessor::new().await?;
@@ -167,6 +171,7 @@ async fn callback_handler(
                 message_proc
                     .send_cocktail_page(
                         &MenuCommands::parse(&prev_page),
+                        &user_id,
                         &callback.chat_id().unwrap(),
                         &message_id,
                         &uuid::Uuid::parse_str(cocktail_id.as_str()).unwrap(),
@@ -182,6 +187,32 @@ async fn callback_handler(
                         &callback.chat_id().unwrap(),
                         &message_id,
                         &total_pages,
+                    )
+                    .await?;
+            }
+            MenuCommands::AddToFavorite(coctail_id, prev_page) => {
+                let message_proc = MessageProcessor::new().await?;
+                let message_id = callback.clone().message.unwrap().id();
+                message_proc
+                    .add_coctail_to_favorite(
+                        &MenuCommands::parse(&prev_page),
+                        &user_id,
+                        &callback.chat_id().unwrap(),
+                        &message_id,
+                        &uuid::Uuid::parse_str(coctail_id.as_str()).unwrap(),
+                    )
+                    .await?;
+            }
+            MenuCommands::RemoveFromFavorite(coctail_id, prev_page) => {
+                let message_proc = MessageProcessor::new().await?;
+                let message_id = callback.clone().message.unwrap().id();
+                message_proc
+                    .remove_coctail_from_favorite(
+                        &MenuCommands::parse(&prev_page),
+                        &user_id,
+                        &callback.chat_id().unwrap(),
+                        &message_id,
+                        &uuid::Uuid::parse_str(coctail_id.as_str()).unwrap(),
                     )
                     .await?;
             }

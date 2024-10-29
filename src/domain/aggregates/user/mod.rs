@@ -1,6 +1,5 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use std::error::Error;
 
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -15,16 +14,16 @@ pub struct User {
 #[async_trait]
 pub trait UserRepo {
     /// .
-    async fn create(&self, user_entity: &User);
+    async fn create(&self, user_entity: &User) -> Result<()>;
     /// .
-    async fn delete(&self, user_entity: &User);
+    async fn delete(&self, user_entity: &User) -> Result<()>;
     /// .
-    async fn update(&self, user_entity: &User);
+    async fn update(&self, user_entity: &User) -> Result<()>;
     /// .
     async fn get_by_telegram_id(
         &self,
         telegram_user_id: &u64,
-    ) -> Result<User>;
+    ) -> Result<Option<User>>;
     /// .
     async fn is_exist_by_telegram_id(
         &self,

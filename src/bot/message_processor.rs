@@ -1,9 +1,11 @@
 use anyhow::{Context, Result};
 use teloxide::utils::markdown::escape;
+use uuid::Uuid;
 
 use super::commands::MenuCommands;
 use super::inline_keyboards;
 use crate::bot::inline_keyboards::PageNumber;
+use crate::domain::aggregates::user::User;
 use crate::{
     bot::TgBotProvider,
     domain::{
@@ -142,6 +144,7 @@ where
     pub async fn send_cocktail_page(
         &self,
         prev_page: &MenuCommands,
+        user_id: &UserId,
         chat_id: &ChatId,
         message_id: &MessageId,
         cocktail_id: &uuid::Uuid,
@@ -150,32 +153,66 @@ where
         match cocktail {
             Some(cock) => {
                 let mut result_string = format!("🍸*Коктейль:* {}\n", escape(&cock.russian_name));
-                result_string.push_str(&format!("*Английское название:* {}\n", escape(&cock.name.unwrap())));
+                result_string.push_str(&format!(
+                    "*Английское название:* {}\n",
+                    escape(&cock.name.unwrap())
+                ));
                 result_string.push_str("\n*Ингредиенты:*\n");
                 for com_el in cock.composition_elements.unwrap() {
-                	result_string.push_str(&format!("👉 {} {}{}\n", escape(&com_el.name), com_el.count, escape(&com_el.unit)));
+                    result_string.push_str(&format!(
+                        "👉 {} {}{}\n",
+                        escape(&com_el.name),
+                        com_el.count,
+                        escape(&com_el.unit)
+                    ));
                 }
                 result_string.push_str("\n*Требуемые инструменты:*\n");
                 for tool in cock.tools.unwrap() {
-                	result_string.push_str(&format!("👉 {} {}{}\n", escape(&tool.name), tool.count, escape(&tool.unit)));
+                    result_string.push_str(&format!(
+                        "👉 {} {}{}\n",
+                        escape(&tool.name),
+                        tool.count,
+                        escape(&tool.unit)
+                    ));
                 }
                 result_string.push_str("\n*Способ приготовления:*\n");
                 for (i, recipe_step) in cock.recipe.unwrap().steps.iter().enumerate() {
-                	result_string.push_str(&format!("{}\\. {}\n", i+1, escape(recipe_step)));
+                    result_string.push_str(&format!("{}\\. {}\n", i + 1, escape(recipe_step)));
                 }
                 result_string.push_str("\n*История для этого коктейля:*\n");
                 result_string.push_str(&escape(&cock.history.unwrap()));
                 result_string.push_str("\n\n*Теги:*\n");
                 for tag in cock.tags.unwrap() {
-                	result_string.push_str(&format!("\\#{} ", tag.name.replace(" ", "\\_")));
+                    result_string.push_str(&format!("\\#{} ", tag.name.replace(" ", "\\_")));
                 }
 
-                let mut edit_message_text = self.bot_provider.bot.edit_message_text(
-                    *chat_id,
-                    *message_id,
-                    &result_string,
-                );
-                let keyboard = inline_keyboards::get_cocktail_card_navigate_keyboard(prev_page);
+                let user = self.user_repo.get_by_telegram_id(&user_id.0).await?;
+
+                let mut edit_message_text =
+                    self.bot_provider
+                        .bot
+                        .edit_message_text(*chat_id, *message_id, &result_string);
+                let keyboard = if let Some(user) = user {
+                    if user.favorite_cocktails.contains(cocktail_id) {
+                        inline_keyboards::get_cocktail_card_navigate_keyboard(
+                            prev_page,
+                            cocktail_id,
+                            &Some(true),
+                        )
+                    } else {
+                        inline_keyboards::get_cocktail_card_navigate_keyboard(
+                            prev_page,
+                            cocktail_id,
+                            &Some(false),
+                        )
+                    }
+                } else {
+                    inline_keyboards::get_cocktail_card_navigate_keyboard(
+                        prev_page,
+                        cocktail_id,
+                        &None,
+                    )
+                };
                 edit_message_text = edit_message_text.reply_markup(keyboard);
 
                 edit_message_text.await?;
@@ -191,5 +228,65 @@ where
         _chat_id: &ChatId,
     ) -> Result<()> {
         Ok(())
+    }
+
+    pub async fn register_user(
+        &self,
+        user_id: &UserId,
+        chat_id: &ChatId,
+        message_id: &MessageId,
+    ) -> Result<()> {
+        let user_to_add = User {
+            id: Uuid::new_v4(),
+            telegram_id: user_id.0,
+            favorite_cocktails: vec![],
+        };
+        self.user_repo.create(&user_to_add).await?;
+
+        self.send_menu_to_user(user_id, chat_id, message_id, true)
+            .await?;
+
+        Ok(())
+    }
+
+    pub async fn add_coctail_to_favorite(
+        &self,
+        prev_page: &MenuCommands,
+        user_id: &UserId,
+        chat_id: &ChatId,
+        message_id: &MessageId,
+        cocktail_id: &uuid::Uuid,
+    ) -> Result<()> {
+        let user = self.user_repo.get_by_telegram_id(&user_id.0).await?;
+        if let Some(mut user) = user {
+            user.favorite_cocktails.push(*cocktail_id);
+            self.user_repo.update(&user).await?;
+            self.send_cocktail_page(prev_page, user_id, chat_id, message_id, cocktail_id).await?;
+            Ok(())
+        } else {
+            log::warn!("User with id {} not found in store", user_id.0);
+            Ok(())
+        }
+    }
+
+    pub async fn remove_coctail_from_favorite(
+        &self,
+        prev_page: &MenuCommands,
+        user_id: &UserId,
+        chat_id: &ChatId,
+        message_id: &MessageId,
+        cocktail_id: &uuid::Uuid,
+    ) -> Result<()> {
+        let user = self.user_repo.get_by_telegram_id(&user_id.0).await?;
+        if let Some(mut user) = user {
+            let index = user.favorite_cocktails.iter().position(|x| *x == *cocktail_id).unwrap();
+            user.favorite_cocktails.remove(index);
+            self.user_repo.update(&user).await?;
+            self.send_cocktail_page(prev_page, user_id, chat_id, message_id, cocktail_id).await?;
+            Ok(())
+        } else {
+            log::warn!("User with id {} not found in store", user_id.0);
+            Ok(())
+        }
     }
 }

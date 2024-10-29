@@ -26,57 +26,58 @@ impl UserRepository {
 
 #[async_trait]
 impl UserRepo for UserRepository {
-    async fn create(&self, user_entity: &User) {
+    async fn create(&self, user_entity: &User) -> Result<()> {
+        let user_db: UserDbModel = UserDbModel::from(user_entity.clone());
+
         let user_collection = self.db_client.get_users_collection();
         let _insert_result = user_collection
-            .insert_one(UserDbModel::from(user_entity.clone()))
+            .insert_one(user_db)
             .await
-            .expect("Error while insert user to database");
+            .context("Error while insert user to database")?;
+        log::info!(
+            "Insert new user in database. Insert id {}",
+            _insert_result.inserted_id
+        );
+
+        Ok(())
     }
 
-    async fn delete(&self, user_entity: &User) {
+    async fn delete(&self, user_entity: &User) -> Result<()> {
         let delete_filter = doc! {"id":  user_entity.id.to_string()};
         self.db_client
             .get_users_collection()
             .delete_one(delete_filter)
             .await
-            .expect("Error while delete user from db");
+            .context("Error while delete user from db")?;
+
+        Ok(())
     }
 
-    async fn update(&self, user_entity: &User) {
+    async fn update(&self, user_entity: &User) -> Result<()> {
         let update_filter = doc! {"id":  user_entity.id.to_string()};
         let to_set = Set { value: user_entity };
         self.db_client
             .get_users_collection()
             .update_one(update_filter, to_set)
             .await
-            .expect("Error while update user in db");
+            .context("Error while update user in db")?;
+
+        Ok(())
     }
 
-    async fn get_by_telegram_id(
-        &self,
-        telegram_user_id: &u64,
-    ) -> Result<User> {
+    async fn get_by_telegram_id(&self, telegram_user_id: &u64) -> Result<Option<User>> {
         let user = self
             .db_client
             .get_users_collection()
             .find_one(doc! {"telegram_id": telegram_user_id.to_string()})
             .await?;
-        let user_result = match user {
-            Some(u) => u,
-            None => {
-                log::error!("User with telegram id {telegram_user_id} not found.");
-                panic!("User with telegram id {telegram_user_id} not found");
-            }
-        };
-
-        Ok(user_result.into())
+        match user {
+            Some(u) => Ok(Some(u.into())),
+            None => Ok(None)
+        }
     }
 
-    async fn is_exist_by_telegram_id(
-        &self,
-        telegram_user_id: &u64,
-    ) -> Result<bool> {
+    async fn is_exist_by_telegram_id(&self, telegram_user_id: &u64) -> Result<bool> {
         let user = self
             .db_client
             .get_users_collection()

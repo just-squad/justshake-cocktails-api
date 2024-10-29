@@ -80,7 +80,6 @@ impl CocktailRepo for CocktailRepository {
 
     async fn get_by_id(&self, id: &uuid::Uuid) -> Result<Option<Cocktail>> {
         let cocktail_collection = self.db_client.get_cocktails_collection();
-        //let _uuid_bson = mongodb::bson::to_document(&bson::Uuid::from(*id)).unwrap();
         let uuid_mongo = mongodb::bson::Uuid::parse_str(id.to_string()).unwrap();
 
         cocktail_collection

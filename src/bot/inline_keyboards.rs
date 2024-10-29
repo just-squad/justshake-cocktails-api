@@ -178,7 +178,11 @@ pub fn get_cocktail_pages_keyboard(total_pages: &u64) -> InlineKeyboardMarkup {
     InlineKeyboardMarkup::new(keyboard)
 }
 
-pub fn get_cocktail_card_navigate_keyboard(prev_page: &MenuCommands) -> InlineKeyboardMarkup {
+pub fn get_cocktail_card_navigate_keyboard(
+    prev_page: &MenuCommands,
+    cocktail_id: &uuid::Uuid,
+    favorite: &Option<bool>,
+) -> InlineKeyboardMarkup {
     let mut keyboard: Vec<Vec<InlineKeyboardButton>> = vec![];
 
     let mut navigate_row: Vec<InlineKeyboardButton> = vec![];
@@ -193,8 +197,27 @@ pub fn get_cocktail_card_navigate_keyboard(prev_page: &MenuCommands) -> InlineKe
         MenuCommands::SearchById(_, _) => todo!(),
         MenuCommands::CocktailsPages(_) => todo!(),
         MenuCommands::Unknown => todo!(),
+        MenuCommands::AddToFavorite(_, _) => todo!(),
+        MenuCommands::RemoveFromFavorite(_, _) => todo!(),
     };
-    navigate_row.push(InlineKeyboardButton::callback("👈 Назад", prev_page_command_string));
+    navigate_row.push(InlineKeyboardButton::callback(
+        "👈 Назад",
+        prev_page_command_string,
+    ));
+    if favorite.is_some() {
+        let fav_bool = favorite.unwrap();
+        if fav_bool {
+            navigate_row.push(InlineKeyboardButton::callback(
+                "❤️",
+                MenuCommands::get_remove_cocktail_from_favourite_command_string(cocktail_id, prev_page),
+            ));
+        } else {
+            navigate_row.push(InlineKeyboardButton::callback(
+                "🤍",
+                MenuCommands::get_add_cocktail_to_favourite_command_string(cocktail_id, prev_page),
+            ));
+        }
+    }
     keyboard.push(navigate_row);
 
     InlineKeyboardMarkup::new(keyboard)

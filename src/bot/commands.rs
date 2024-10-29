@@ -26,6 +26,10 @@ pub enum MenuCommands {
     SearchById(String, String) = 5,
     #[strum(serialize = "cop")]
     CocktailsPages(u64) = 6,
+    #[strum(serialize = "atf")]
+    AddToFavorite(String, String) = 7,
+    #[strum(serialize = "rff")]
+    RemoveFromFavorite(String, String) = 8,
 
     Unknown = 99999,
 }
@@ -52,6 +56,12 @@ impl MenuCommands {
         } else if cmd == MenuCommands::CocktailsPages(0).as_ref() {
             let ulong_param = param.parse().unwrap_or_default();
             MenuCommands::CocktailsPages(ulong_param)
+        } else if cmd == MenuCommands::AddToFavorite(String::new(), String::new()).as_ref() {
+            let params: Vec<&str> = param.split(" ").collect();
+            MenuCommands::AddToFavorite(params[0].to_string(), params[1].to_string())
+        } else if cmd == MenuCommands::RemoveFromFavorite(String::new(), String::new()).as_ref() {
+            let params: Vec<&str> = param.split(" ").collect();
+            MenuCommands::RemoveFromFavorite(params[0].to_string(), params[1].to_string())
         } else {
             MenuCommands::Unknown
         }
@@ -71,9 +81,42 @@ impl MenuCommands {
         format!("{}{}", cocktail_pages_command, total_pages)
     }
 
-    pub fn get_cocktail_by_id_command_string(cocktail_id: &uuid::Uuid, source_page: &MenuCommands) -> String {
-        let cocktail_by_id_command = String::from(MenuCommands::SearchById("".to_owned(), "".to_owned()).as_ref());
+    pub fn get_cocktail_by_id_command_string(
+        cocktail_id: &uuid::Uuid,
+        source_page: &MenuCommands,
+    ) -> String {
+        let cocktail_by_id_command =
+            String::from(MenuCommands::SearchById("".to_owned(), "".to_owned()).as_ref());
         let prev_page_command = String::from(source_page.as_ref());
-        format!("{} {} {}", cocktail_by_id_command, cocktail_id, prev_page_command)
+        format!(
+            "{} {} {}",
+            cocktail_by_id_command, cocktail_id, prev_page_command
+        )
+    }
+
+    pub fn get_add_cocktail_to_favourite_command_string(
+        cocktail_id: &uuid::Uuid,
+        source_page: &MenuCommands,
+    ) -> String {
+        let add_cocktail_to_favourite_command =
+            String::from(MenuCommands::AddToFavorite("".to_owned(), "".to_owned()).as_ref());
+        let prev_page_command = String::from(source_page.as_ref());
+        format!(
+            "{} {} {}",
+            add_cocktail_to_favourite_command, cocktail_id, prev_page_command
+        )
+    }
+
+    pub fn get_remove_cocktail_from_favourite_command_string(
+        cocktail_id: &uuid::Uuid,
+        source_page: &MenuCommands,
+    ) -> String {
+        let remove_cocktail_from_favourite_command =
+            String::from(MenuCommands::RemoveFromFavorite("".to_owned(), "".to_owned()).as_ref());
+        let prev_page_command = String::from(source_page.as_ref());
+        format!(
+            "{} {} {}",
+            remove_cocktail_from_favourite_command, cocktail_id, prev_page_command
+        )
     }
 }
