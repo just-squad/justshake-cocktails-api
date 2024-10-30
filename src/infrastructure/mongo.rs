@@ -52,6 +52,25 @@ impl MongoDbClient {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Update<T> {
+    #[serde{rename="$set"}]
+    pub value: T,
+}
+
+impl<'a, T: Serialize + Deserialize> Into<UpdateModifications> for Update<T>
+{
+    fn into(self) -> UpdateModifications {
+        UpdateModifications::Document(
+            mongodb::bson::to_bson(&self.value)
+                .expect("Can't convert value to bson")
+                .as_document()
+                .expect("Can't convert bson document to document")
+                .to_owned(),
+        )
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Set<T> {
     #[serde{rename="$set"}]
     pub value: T,
@@ -136,15 +155,21 @@ impl From<Cocktail> for CocktailDbModel {
             russian_name: value.russian_name,
             country_of_origin: value.country_of_origin,
             history: value.history,
-            tags: value.tags.map(|tags| tags.iter().map(|x| TagDbModel::from(x.clone())).collect()),
-            tools: value.tools.map(|tools| tools
-                        .iter()
-                        .map(|x| CocktailItemDbModel::from(x.clone()))
-                        .collect()),
-            composition_elements: value.composition_elements.map(|composition_elements| composition_elements
-                        .iter()
-                        .map(|x| CocktailItemDbModel::from(x.clone()))
-                        .collect()),
+            tags: value
+                .tags
+                .map(|tags| tags.iter().map(|x| TagDbModel::from(x.clone())).collect()),
+            tools: value.tools.map(|tools| {
+                tools
+                    .iter()
+                    .map(|x| CocktailItemDbModel::from(x.clone()))
+                    .collect()
+            }),
+            composition_elements: value.composition_elements.map(|composition_elements| {
+                composition_elements
+                    .iter()
+                    .map(|x| CocktailItemDbModel::from(x.clone()))
+                    .collect()
+            }),
             recipe: value.recipe.map(RecipeDbModel::from),
         }
     }
@@ -159,12 +184,18 @@ impl Into<Cocktail> for CocktailDbModel {
             russian_name: self.russian_name,
             country_of_origin: self.country_of_origin,
             history: self.history,
-            tags: self.tags.map(|tags| tags.iter().map(|x| Into::into(x.clone())).collect()),
-            tools: self.tools.map(|tags| tags.iter().map(|x| Into::into(x.clone())).collect()),
-            composition_elements: self.composition_elements.map(|composition_elements| composition_elements
-                        .iter()
-                        .map(|x| Into::into(x.clone()))
-                        .collect()),
+            tags: self
+                .tags
+                .map(|tags| tags.iter().map(|x| Into::into(x.clone())).collect()),
+            tools: self
+                .tools
+                .map(|tags| tags.iter().map(|x| Into::into(x.clone())).collect()),
+            composition_elements: self.composition_elements.map(|composition_elements| {
+                composition_elements
+                    .iter()
+                    .map(|x| Into::into(x.clone()))
+                    .collect()
+            }),
             recipe: self.recipe.map(|recipe| recipe.into()),
         }
     }

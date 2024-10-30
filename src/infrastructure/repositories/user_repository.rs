@@ -54,11 +54,15 @@ impl UserRepo for UserRepository {
     }
 
     async fn update(&self, user_entity: &User) -> Result<()> {
-        let update_filter = doc! {"id":  user_entity.id.to_string()};
-        let to_set = Set { value: user_entity };
-        self.db_client
+        let user_cloned = user_entity.clone();
+        let uuid_mongo = mongodb::bson::Uuid::parse_str(user_cloned.id.to_string()).unwrap();
+        let update_filter = doc! {"id": &uuid_mongo};
+        let user_db: UserDbModel = UserDbModel::from(user_cloned);
+        let to_set = Set { value: &user_db };
+        let _update_result = self
+            .db_client
             .get_users_collection()
-            .update_one(update_filter, to_set)
+            .find_one_and_update(update_filter, to_set)
             .await
             .context("Error while update user in db")?;
 
@@ -73,7 +77,7 @@ impl UserRepo for UserRepository {
             .await?;
         match user {
             Some(u) => Ok(Some(u.into())),
-            None => Ok(None)
+            None => Ok(None),
         }
     }
 
