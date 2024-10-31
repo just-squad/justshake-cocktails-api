@@ -1,7 +1,7 @@
 #![allow(clippy::from_over_into)]
 
 use anyhow::{Context, Result};
-use mongodb::{options::UpdateModifications, Client, Collection};
+use mongodb::{bson::doc, options::UpdateModifications, Client, Collection};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -52,46 +52,6 @@ impl MongoDbClient {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Update<T> {
-    #[serde{rename="$set"}]
-    pub value: T,
-}
-
-impl<'a, T: Serialize + Deserialize> Into<UpdateModifications> for Update<T>
-{
-    fn into(self) -> UpdateModifications {
-        UpdateModifications::Document(
-            mongodb::bson::to_bson(&self.value)
-                .expect("Can't convert value to bson")
-                .as_document()
-                .expect("Can't convert bson document to document")
-                .to_owned(),
-        )
-    }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Set<T> {
-    #[serde{rename="$set"}]
-    pub value: T,
-}
-
-impl<T> From<Set<T>> for UpdateModifications
-where
-    T: Serialize,
-{
-    fn from(val: Set<T>) -> Self {
-        UpdateModifications::Document(
-            mongodb::bson::to_bson(&val)
-                .expect("Can't convert value to bson")
-                .as_document()
-                .expect("Can't convert bson document to document")
-                .to_owned(),
-        )
-    }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Insert<T> {
     #[serde{rename="$insert"}]
     pub value: T,
@@ -99,20 +59,20 @@ pub struct Insert<T> {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct UserDbModel {
-    pub id: String,
+    pub id: mongodb::bson::uuid::Uuid,
     pub telegram_id: String,
-    pub favorite_cocktails: Vec<String>,
+    pub favorite_cocktails: Vec<mongodb::bson::uuid::Uuid>,
 }
 
 impl From<User> for UserDbModel {
     fn from(value: User) -> Self {
         UserDbModel {
-            id: value.id.to_string(),
+            id: mongodb::bson::Uuid::parse_str(value.id.to_string()).unwrap(),
             telegram_id: value.telegram_id.to_string(),
             favorite_cocktails: value
                 .favorite_cocktails
                 .iter()
-                .map(|i| i.to_string())
+                .map(|i| mongodb::bson::Uuid::parse_str(i.to_string()).unwrap())
                 .collect(),
         }
     }
@@ -121,14 +81,22 @@ impl From<User> for UserDbModel {
 impl Into<User> for UserDbModel {
     fn into(self) -> User {
         User {
-            id: Uuid::parse_str(&self.id).unwrap(),
+            id: Uuid::parse_str(&self.id.to_string()).unwrap(),
             telegram_id: self.telegram_id.parse().unwrap(),
             favorite_cocktails: self
                 .favorite_cocktails
                 .iter()
-                .map(|fc| Uuid::parse_str(fc).unwrap())
+                .map(|fc| Uuid::parse_str(&fc.to_string()).unwrap())
                 .collect(),
         }
+    }
+}
+
+impl Into<UpdateModifications> for UserDbModel {
+    fn into(self) -> UpdateModifications {
+     UpdateModifications::Document(
+            doc! {"$set":{"favorite_cocktails": self.favorite_cocktails}},
+        )
     }
 }
 

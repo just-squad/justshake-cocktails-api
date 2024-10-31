@@ -5,9 +5,7 @@ use mongodb::bson::doc;
 
 use crate::{
     domain::aggregates::user::{User, UserRepo},
-    infrastructure::{
-        configurations::DbConfiguration, mongo::MongoDbClient, mongo::Set, mongo::UserDbModel,
-    },
+    infrastructure::{configurations::DbConfiguration, mongo::MongoDbClient, mongo::UserDbModel},
 };
 
 #[derive(Debug, Clone)]
@@ -28,7 +26,6 @@ impl UserRepository {
 impl UserRepo for UserRepository {
     async fn create(&self, user_entity: &User) -> Result<()> {
         let user_db: UserDbModel = UserDbModel::from(user_entity.clone());
-
         let user_collection = self.db_client.get_users_collection();
         let _insert_result = user_collection
             .insert_one(user_db)
@@ -56,13 +53,16 @@ impl UserRepo for UserRepository {
     async fn update(&self, user_entity: &User) -> Result<()> {
         let user_cloned = user_entity.clone();
         let uuid_mongo = mongodb::bson::Uuid::parse_str(user_cloned.id.to_string()).unwrap();
-        let update_filter = doc! {"id": &uuid_mongo};
         let user_db: UserDbModel = UserDbModel::from(user_cloned);
-        let to_set = Set { value: &user_db };
+        log::info!(
+            "update user with id {}. favorite cocktails count {}",
+            user_db.id,
+            user_db.favorite_cocktails.len()
+        );
         let _update_result = self
             .db_client
             .get_users_collection()
-            .find_one_and_update(update_filter, to_set)
+            .find_one_and_update(doc! {"id": &uuid_mongo}, user_db)
             .await
             .context("Error while update user in db")?;
 
