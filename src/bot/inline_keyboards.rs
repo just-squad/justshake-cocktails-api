@@ -46,7 +46,7 @@ const PROFILE_PAGE_MENU_BTN: &MenuButtonMeta = &MenuButtonMeta {
 };
 const REGISTER_PAGE_MENU_BTN: &MenuButtonMeta = &MenuButtonMeta {
     name: "🔑 Регистрация",
-    callback_data: &MenuCommands::Register,
+    callback_data: &MenuCommands::RegisterConfirmation,
 };
 
 pub fn get_main_menu_keyboard(user_registered: &bool) -> InlineKeyboardMarkup {
@@ -74,6 +74,36 @@ pub fn get_main_menu_keyboard(user_registered: &bool) -> InlineKeyboardMarkup {
             )]);
         }
     }
+
+    InlineKeyboardMarkup::new(keyboard)
+}
+
+pub fn get_register_confirmation_keyboard() -> InlineKeyboardMarkup {
+    let keyboard: Vec<Vec<InlineKeyboardButton>> = vec![
+        vec![InlineKeyboardButton::callback(
+            "Подтвердить регистрацию",
+            MenuCommands::Register.as_ref(),
+        )],
+        vec![InlineKeyboardButton::callback(
+            "👈 Назад",
+            MenuCommands::get_main_menu_command_string(),
+        )],
+    ];
+
+    InlineKeyboardMarkup::new(keyboard)
+}
+
+pub fn get_remove_user_confirmation_keyboard() -> InlineKeyboardMarkup {
+    let keyboard: Vec<Vec<InlineKeyboardButton>> = vec![
+        vec![InlineKeyboardButton::callback(
+            "Подтвердить удаление",
+            MenuCommands::RemoveAccount.as_ref(),
+        )],
+        vec![InlineKeyboardButton::callback(
+            "👈 Назад",
+            MenuCommands::ProfilePage.as_ref(),
+        )],
+    ];
 
     InlineKeyboardMarkup::new(keyboard)
 }
@@ -199,6 +229,10 @@ pub fn get_cocktail_card_navigate_keyboard(
         MenuCommands::Unknown => todo!(),
         MenuCommands::AddToFavorite(_, _) => todo!(),
         MenuCommands::RemoveFromFavorite(_, _) => todo!(),
+        MenuCommands::RegisterConfirmation => todo!(),
+        MenuCommands::RemoveAccount => todo!(),
+        MenuCommands::RemoveAccountConfirmation => todo!(),
+        MenuCommands::ShowFavorites => todo!(),
     };
     navigate_row.push(InlineKeyboardButton::callback(
         "👈 Назад",
@@ -209,7 +243,10 @@ pub fn get_cocktail_card_navigate_keyboard(
         if fav_bool {
             navigate_row.push(InlineKeyboardButton::callback(
                 "❤️",
-                MenuCommands::get_remove_cocktail_from_favourite_command_string(cocktail_id, prev_page),
+                MenuCommands::get_remove_cocktail_from_favourite_command_string(
+                    cocktail_id,
+                    prev_page,
+                ),
             ));
         } else {
             navigate_row.push(InlineKeyboardButton::callback(
@@ -219,6 +256,25 @@ pub fn get_cocktail_card_navigate_keyboard(
         }
     }
     keyboard.push(navigate_row);
+
+    InlineKeyboardMarkup::new(keyboard)
+}
+
+pub fn get_profile_page_keyboard() -> InlineKeyboardMarkup {
+    let keyboard: Vec<Vec<InlineKeyboardButton>> = vec![
+        vec![InlineKeyboardButton::callback(
+            "❤ Показать избранное",
+            MenuCommands::ShowFavorites.as_ref(),
+        )],
+        vec![InlineKeyboardButton::callback(
+            "🗑 Удалить учетную запись",
+            MenuCommands::RemoveAccountConfirmation.as_ref(),
+        )],
+        vec![InlineKeyboardButton::callback(
+            "👈 Назад",
+            MenuCommands::MainMenu.as_ref(),
+        )],
+    ];
 
     InlineKeyboardMarkup::new(keyboard)
 }

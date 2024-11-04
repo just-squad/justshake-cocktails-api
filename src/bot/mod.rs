@@ -163,7 +163,11 @@ async fn callback_handler(
                     .await?;
             }
             MenuCommands::ProfilePage => {
-                let _message_proc = MessageProcessor::new().await?;
+                let message_proc = MessageProcessor::new().await?;
+                let message_id = callback.clone().message.unwrap().id();
+                message_proc
+                    .send_profile_page(&user_id, &callback.chat_id().unwrap(), &message_id)
+                    .await?;
             }
             MenuCommands::SearchById(cocktail_id, prev_page) => {
                 let message_proc = MessageProcessor::new().await?;
@@ -216,6 +220,30 @@ async fn callback_handler(
                     )
                     .await?;
             }
+            MenuCommands::RegisterConfirmation => {
+                let message_proc = MessageProcessor::new().await?;
+                let message_id = callback.clone().message.unwrap().id();
+                message_proc
+                    .send_register_user_confirmation(
+                        &user_id,
+                        &callback.chat_id().unwrap(),
+                        &message_id,
+                    )
+                    .await?;
+            }
+            MenuCommands::RemoveAccount => {}
+            MenuCommands::RemoveAccountConfirmation => {
+                let message_proc = MessageProcessor::new().await?;
+                let message_id = callback.clone().message.unwrap().id();
+                message_proc
+                    .send_remove_user_confirmation(
+                        &user_id,
+                        &callback.chat_id().unwrap(),
+                        &message_id,
+                    )
+                    .await?;
+            }
+            MenuCommands::ShowFavorites => {}
             MenuCommands::Unknown => todo!(),
         };
     }

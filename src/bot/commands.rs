@@ -12,7 +12,7 @@ pub enum MainCommands {
 #[derive(AsRefStr, EnumString, Debug)]
 #[repr(i32)]
 pub enum MenuCommands {
-    #[strum(to_string = "mai")]
+    #[strum(to_string = "mam")]
     MainMenu = 0,
     #[strum(to_string = "col")]
     CocktailsList(u64) = 1,
@@ -30,6 +30,14 @@ pub enum MenuCommands {
     AddToFavorite(String, String) = 7,
     #[strum(serialize = "rff")]
     RemoveFromFavorite(String, String) = 8,
+    #[strum(serialize = "rec")]
+    RegisterConfirmation = 9,
+    #[strum(serialize = "rea")]
+    RemoveAccount = 10,
+    #[strum(serialize = "rac")]
+    RemoveAccountConfirmation = 11,
+    #[strum(serialize = "shf")]
+    ShowFavorites = 12,
 
     Unknown = 99999,
 }
@@ -39,29 +47,38 @@ impl MenuCommands {
         let cmd = s.get(..3).unwrap_or_default();
         let param = s.get(3..).unwrap_or_default().trim();
 
+        // Main Menu
         if cmd == MenuCommands::MainMenu.as_ref() {
             MenuCommands::MainMenu
-        } else if cmd == MenuCommands::CocktailsList(0).as_ref() {
+        } /* CoctailsList */ else if cmd == MenuCommands::CocktailsList(0).as_ref() {
             let ulong_param = param.parse().unwrap_or_default();
             MenuCommands::CocktailsList(ulong_param)
-        } else if cmd == MenuCommands::SearchByName.as_ref() {
+        } /* Search by name */ else if cmd == MenuCommands::SearchByName.as_ref() {
             MenuCommands::SearchByName
-        } else if cmd == MenuCommands::Register.as_ref() {
+        } /* Register */ else if cmd == MenuCommands::Register.as_ref() {
             MenuCommands::Register
-        } else if cmd == MenuCommands::ProfilePage.as_ref() {
+        } /* Profile page */else if cmd == MenuCommands::ProfilePage.as_ref() {
             MenuCommands::ProfilePage
-        } else if cmd == MenuCommands::SearchById(String::new(), String::new()).as_ref() {
+        } /* Search by id */ else if cmd == MenuCommands::SearchById(String::new(), String::new()).as_ref() {
             let params: Vec<&str> = param.split(" ").collect();
             MenuCommands::SearchById(params[0].to_string(), params[1].to_string())
-        } else if cmd == MenuCommands::CocktailsPages(0).as_ref() {
+        } /* Cocktails page */ else if cmd == MenuCommands::CocktailsPages(0).as_ref() {
             let ulong_param = param.parse().unwrap_or_default();
             MenuCommands::CocktailsPages(ulong_param)
-        } else if cmd == MenuCommands::AddToFavorite(String::new(), String::new()).as_ref() {
+        } /* Add to favorite */ else if cmd == MenuCommands::AddToFavorite(String::new(), String::new()).as_ref() {
             let params: Vec<&str> = param.split(" ").collect();
             MenuCommands::AddToFavorite(params[0].to_string(), params[1].to_string())
-        } else if cmd == MenuCommands::RemoveFromFavorite(String::new(), String::new()).as_ref() {
+        } /* Remove from favorite */ else if cmd == MenuCommands::RemoveFromFavorite(String::new(), String::new()).as_ref() {
             let params: Vec<&str> = param.split(" ").collect();
             MenuCommands::RemoveFromFavorite(params[0].to_string(), params[1].to_string())
+        } /* Register confirmation */ else if cmd == MenuCommands::RegisterConfirmation.as_ref() {
+            MenuCommands::RegisterConfirmation
+        } /* Remove account */ else if cmd == MenuCommands::RemoveAccount.as_ref() {
+            MenuCommands::RemoveAccount
+        } /* Remove account confirmation*/ else if cmd == MenuCommands::RemoveAccountConfirmation.as_ref() {
+            MenuCommands::RemoveAccountConfirmation
+        } /* Show favorites */ else if cmd == MenuCommands::ShowFavorites.as_ref(){
+            MenuCommands::ShowFavorites
         } else {
             MenuCommands::Unknown
         }

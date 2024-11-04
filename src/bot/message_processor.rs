@@ -230,6 +230,68 @@ where
         Ok(())
     }
 
+    pub async fn send_register_user_confirmation(
+        &self,
+        _user_id: &UserId,
+        chat_id: &ChatId,
+        message_id: &MessageId,
+    ) -> Result<()> {
+        let mut registration_confirmation_text = "Подтверждая регистрацию, вы соглашаетесь на то, что мы сохраняем ваш идентификатор пользователя Telegram. Другую информацию мы не собираем.\n\n".to_string();
+        registration_confirmation_text.push_str("У вас появляется возможность сохранять любимые коктейли в свою личную подборку, чтобы проще было их искать.\n\n");
+        registration_confirmation_text
+            .push_str("В любой момент вы можете полностью удалить свой профиль.\n");
+        registration_confirmation_text.push_str("Приятного использования ☺️");
+        let mut edit_message_text = self.bot_provider.bot.edit_message_text(
+            *chat_id,
+            *message_id,
+            escape(&registration_confirmation_text),
+        );
+        let registration_confirmation_keyboard =
+            inline_keyboards::get_register_confirmation_keyboard();
+        edit_message_text = edit_message_text.reply_markup(registration_confirmation_keyboard);
+        edit_message_text.await?;
+
+        Ok(())
+    }
+
+    pub async fn send_profile_page(
+        &self,
+        _user_id: &UserId,
+        chat_id: &ChatId,
+        message_id: &MessageId,
+    ) -> Result<()> {
+        let mut edit_message_text =
+            self.bot_provider
+                .bot
+                .edit_message_text(*chat_id, *message_id, "Личный кабинет:");
+        edit_message_text =
+            edit_message_text.reply_markup(inline_keyboards::get_profile_page_keyboard());
+        edit_message_text.await?;
+        Ok(())
+    }
+
+    pub async fn send_remove_user_confirmation(
+        &self,
+        _user_id: &UserId,
+        chat_id: &ChatId,
+        message_id: &MessageId,
+    ) -> Result<()> {
+        let mut remove_user_confirmation_text =
+            "Вы точно хотите удалить свой профиль?\n\n".to_string();
+
+        remove_user_confirmation_text.push_str("Все избранные коктейли будут удалены. 😔\n");
+
+        let mut edit_message_text = self.bot_provider.bot.edit_message_text(
+            *chat_id,
+            *message_id,
+            escape(&remove_user_confirmation_text),
+        );
+        edit_message_text = edit_message_text
+            .reply_markup(inline_keyboards::get_remove_user_confirmation_keyboard());
+        edit_message_text.await?;
+        Ok(())
+    }
+
     pub async fn register_user(
         &self,
         user_id: &UserId,
@@ -261,7 +323,8 @@ where
         if let Some(mut user) = user {
             user.favorite_cocktails.push(*cocktail_id);
             self.user_repo.update(&user).await?;
-            self.send_cocktail_page(prev_page, user_id, chat_id, message_id, cocktail_id).await?;
+            self.send_cocktail_page(prev_page, user_id, chat_id, message_id, cocktail_id)
+                .await?;
             Ok(())
         } else {
             log::warn!("User with id {} not found in store", user_id.0);
@@ -279,10 +342,15 @@ where
     ) -> Result<()> {
         let user = self.user_repo.get_by_telegram_id(&user_id.0).await?;
         if let Some(mut user) = user {
-            let index = user.favorite_cocktails.iter().position(|x| *x == *cocktail_id).unwrap();
+            let index = user
+                .favorite_cocktails
+                .iter()
+                .position(|x| *x == *cocktail_id)
+                .unwrap();
             user.favorite_cocktails.remove(index);
             self.user_repo.update(&user).await?;
-            self.send_cocktail_page(prev_page, user_id, chat_id, message_id, cocktail_id).await?;
+            self.send_cocktail_page(prev_page, user_id, chat_id, message_id, cocktail_id)
+                .await?;
             Ok(())
         } else {
             log::warn!("User with id {} not found in store", user_id.0);
