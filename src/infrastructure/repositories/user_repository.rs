@@ -40,10 +40,11 @@ impl UserRepo for UserRepository {
     }
 
     async fn delete(&self, user_entity: &User) -> Result<()> {
-        let delete_filter = doc! {"id":  user_entity.id.to_string()};
-        self.db_client
+        let uuid_mongo = mongodb::bson::Uuid::parse_str(user_entity.id.to_string()).unwrap();
+        let delete_filter = doc! {"id":  &uuid_mongo};
+        let _delete_result = self.db_client
             .get_users_collection()
-            .delete_one(delete_filter)
+            .find_one_and_delete(delete_filter)
             .await
             .context("Error while delete user from db")?;
 
@@ -51,9 +52,8 @@ impl UserRepo for UserRepository {
     }
 
     async fn update(&self, user_entity: &User) -> Result<()> {
-        let user_cloned = user_entity.clone();
-        let uuid_mongo = mongodb::bson::Uuid::parse_str(user_cloned.id.to_string()).unwrap();
-        let user_db: UserDbModel = UserDbModel::from(user_cloned);
+        let uuid_mongo = mongodb::bson::Uuid::parse_str(user_entity.id.to_string()).unwrap();
+        let user_db: UserDbModel = UserDbModel::from(user_entity.clone());
         log::info!(
             "update user with id {}. favorite cocktails count {}",
             user_db.id,

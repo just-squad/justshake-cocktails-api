@@ -1,9 +1,10 @@
 use anyhow::{Context, Result};
+use teloxide::dispatching::dialogue::GetChatId;
 use teloxide::utils::markdown::escape;
 use uuid::Uuid;
 
 use super::commands::MenuCommands;
-use super::inline_keyboards;
+use super::inline_keyboards::{self, ListCoctailsSource};
 use crate::bot::inline_keyboards::PageNumber;
 use crate::domain::aggregates::user::User;
 use crate::{
@@ -17,8 +18,8 @@ use crate::{
     },
     infrastructure,
 };
-use teloxide::payloads::EditMessageTextSetters;
-use teloxide::types::MessageId;
+use teloxide::payloads::{AnswerCallbackQuerySetters, EditMessageTextSetters};
+use teloxide::types::{CallbackQuery, MessageId};
 use teloxide::{
     payloads::SendMessageSetters,
     prelude::Requester,
@@ -94,9 +95,7 @@ where
 
     pub async fn send_cocktails_paged(
         &self,
-        _user_id: &UserId,
-        chat_id: &ChatId,
-        message_id: &MessageId,
+        callback: &CallbackQuery,
         next_page: &u64,
     ) -> Result<()> {
         let page_size: u64 = 10;
@@ -112,11 +111,15 @@ where
             &_cocktails_names,
             &PageNumber(*next_page),
             &page_size,
+            ListCoctailsSource::MainMenu,
         );
+        let callback_cloned = callback.clone();
+        let chat_id = callback_cloned.chat_id().unwrap();
+        let message_id = callback_cloned.message.unwrap().id();
         let mut edit_message_text =
             self.bot_provider
                 .bot
-                .edit_message_text(*chat_id, *message_id, "Коктейли: ");
+                .edit_message_text(chat_id, message_id, "Коктейли: ");
         edit_message_text = edit_message_text.reply_markup(keyboard.clone());
         edit_message_text.await?;
 
@@ -125,12 +128,13 @@ where
 
     pub async fn send_cocktails_pages(
         &self,
+        prev_page: &MenuCommands,
         _user_id: &UserId,
         chat_id: &ChatId,
         message_id: &MessageId,
         total_pages: &u64,
     ) -> Result<()> {
-        let keyboard = inline_keyboards::get_cocktail_pages_keyboard(total_pages);
+        let keyboard = inline_keyboards::get_cocktail_pages_keyboard(total_pages, prev_page);
         let mut edit_message_text =
             self.bot_provider
                 .bot
@@ -292,12 +296,12 @@ where
         Ok(())
     }
 
-    pub async fn register_user(
-        &self,
-        user_id: &UserId,
-        chat_id: &ChatId,
-        message_id: &MessageId,
-    ) -> Result<()> {
+    pub async fn register_user(&self, callback_query: &CallbackQuery) -> Result<()> {
+        let callback = callback_query.clone();
+        let user_id = callback.from.id;
+        let chat_id = callback.chat_id().unwrap();
+        let message_id = callback.message.unwrap().id();
+
         let user_to_add = User {
             id: Uuid::new_v4(),
             telegram_id: user_id.0,
@@ -305,9 +309,45 @@ where
         };
         self.user_repo.create(&user_to_add).await?;
 
-        self.send_menu_to_user(user_id, chat_id, message_id, true)
+        let callback_query_answer = self
+            .bot_provider
+            .bot
+            .answer_callback_query(&callback.id)
+            .show_alert(true)
+            .text("Вы успешно зарегистрированы".to_string())
+            .await?;
+        log::info!("Send callback register result {:?}", callback_query_answer);
+
+        self.send_profile_page(&user_id, &chat_id, &message_id)
             .await?;
 
+        Ok(())
+    }
+
+    pub async fn remove_user(&self, callback_query: &CallbackQuery) -> Result<()> {
+        let callback = callback_query.clone();
+        let user_id = callback.from.id;
+        let chat_id = callback.chat_id().unwrap();
+        let message_id = callback.message.unwrap().id();
+
+        let user = self.user_repo.get_by_telegram_id(&user_id.0).await?;
+        if let Some(user) = user {
+            self.user_repo.delete(&user).await?;
+            let callback_query_answer = self
+                .bot_provider
+                .bot
+                .answer_callback_query(&callback.id)
+                .show_alert(true)
+                .text("Вы успешно удалили свою учетную запись".to_string())
+                .await?;
+            log::info!(
+                "Send callback remove user result {:?}",
+                callback_query_answer
+            );
+
+            self.send_menu_to_user(&user_id, &chat_id, &message_id, true)
+                .await?;
+        }
         Ok(())
     }
 
@@ -356,5 +396,43 @@ where
             log::warn!("User with id {} not found in store", user_id.0);
             Ok(())
         }
+    }
+
+    pub async fn send_favorite_cocktails(
+        &self,
+        callback: &CallbackQuery,
+        next_page: &u64,
+    ) -> Result<()> {
+        let callback_cloned = callback.clone();
+        let user_id = callback_cloned.from.id;
+        let chat_id = callback_cloned.chat_id().unwrap();
+        let message_id = callback_cloned.message.unwrap().id();
+
+        let user = self.user_repo.get_by_telegram_id(&user_id.0).await?;
+        if let Some(user) = user {
+            let page_size: u64 = 10;
+            let cocktails_filter = CocktailNamesFilter {
+                ids: user.favorite_cocktails,
+                pagination: Pagination {
+                    page: *next_page,
+                    items_per_page: page_size,
+                },
+            };
+            let _cocktails_names = self.cocktail_repo.get_names(&cocktails_filter).await?;
+            let keyboard = inline_keyboards::get_cocktails_list_keyboard(
+                &_cocktails_names,
+                &PageNumber(*next_page),
+                &page_size,
+                ListCoctailsSource::Favorites,
+            );
+            let mut edit_message_text =
+                self.bot_provider
+                    .bot
+                    .edit_message_text(chat_id, message_id, "Коктейли: ");
+            edit_message_text = edit_message_text.reply_markup(keyboard.clone());
+            edit_message_text.await?;
+        };
+
+        Ok(())
     }
 }

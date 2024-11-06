@@ -42,7 +42,7 @@ impl CocktailRepo for CocktailRepository {
             let uuids_doc: Vec<mongodb::bson::Document> = filter
                 .ids
                 .iter()
-                .map(|id| doc! {"id": id.to_string()})
+                .map(|id| doc! {"id": mongodb::bson::Uuid::parse_str(id.to_string()).unwrap()})
                 .collect();
             doc! {"$or":uuids_doc}
         } else {

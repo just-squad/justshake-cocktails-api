@@ -23,6 +23,11 @@ impl PageNumber {
     }
 }
 
+pub enum ListCoctailsSource {
+    MainMenu,
+    Favorites,
+}
+
 #[derive(Debug)]
 struct MenuButtonMeta<'a> {
     name: &'a str,
@@ -112,18 +117,21 @@ pub fn get_cocktails_list_keyboard(
     cocktails_paged: &CocktailsPaged,
     current_page: &PageNumber,
     page_size: &u64,
+    source: ListCoctailsSource,
 ) -> InlineKeyboardMarkup {
     let mut keyboard: Vec<Vec<InlineKeyboardButton>> = vec![];
     for cocktail_info in cocktails_paged.items.chunks(1) {
         let row = cocktail_info
             .iter()
             .map(|cocktail_info| {
+                let current_page_v = current_page.0;
+                let command = match source {
+                    ListCoctailsSource::MainMenu => &MenuCommands::CocktailsList(current_page_v),
+                    ListCoctailsSource::Favorites => &MenuCommands::ShowFavorites(current_page_v),
+                };
                 InlineKeyboardButton::callback(
                     cocktail_info.russian_name.to_owned(),
-                    MenuCommands::get_cocktail_by_id_command_string(
-                        &cocktail_info.id,
-                        &MenuCommands::CocktailsList(0),
-                    ),
+                    MenuCommands::get_cocktail_by_id_command_string(&cocktail_info.id, command),
                 )
             })
             .collect();
@@ -138,43 +146,55 @@ pub fn get_cocktails_list_keyboard(
         )
         .as_str(),
     );
+    let next_page_command = match source {
+        ListCoctailsSource::MainMenu => {
+            MenuCommands::get_cocktails_list_command_string(&current_page.next())
+        }
+        ListCoctailsSource::Favorites => {
+            MenuCommands::get_favorite_cocktails_command_string(&current_page.next())
+        }
+    };
+    let prev_page_command = match source {
+        ListCoctailsSource::MainMenu => {
+            MenuCommands::get_cocktails_list_command_string(&current_page.previous())
+        }
+        ListCoctailsSource::Favorites => {
+            MenuCommands::get_favorite_cocktails_command_string(&current_page.previous())
+        }
+    };
+    let get_pages_command = match source {
+        ListCoctailsSource::MainMenu => MenuCommands::get_cocktail_pages_command_string(
+            &available_pages,
+            &MenuCommands::CocktailsList(0),
+        ),
+        ListCoctailsSource::Favorites => MenuCommands::get_cocktail_pages_command_string(
+            &available_pages,
+            &MenuCommands::ShowFavorites(0),
+        ),
+    };
 
     let navigate_line: Vec<InlineKeyboardButton> = if current_page.0 == 0 {
-        vec![
-            InlineKeyboardButton::callback(
+        if available_pages == 1 {
+            vec![InlineKeyboardButton::callback(
                 page_counter_text.clone(),
-                MenuCommands::get_cocktail_pages_command_string(&(available_pages)),
-            ),
-            InlineKeyboardButton::callback(
-                "👉",
-                MenuCommands::get_cocktails_list_command_string(&current_page.next()),
-            ),
-        ]
+                get_pages_command,
+            )]
+        } else {
+            vec![
+                InlineKeyboardButton::callback(page_counter_text.clone(), get_pages_command),
+                InlineKeyboardButton::callback("👉", next_page_command),
+            ]
+        }
     } else if current_page.0 == cocktails_paged.total_count / page_size {
         vec![
-            InlineKeyboardButton::callback(
-                "👈",
-                MenuCommands::get_cocktails_list_command_string(&current_page.previous()),
-            ),
-            InlineKeyboardButton::callback(
-                page_counter_text.clone(),
-                MenuCommands::get_cocktail_pages_command_string(&(available_pages)),
-            ),
+            InlineKeyboardButton::callback("👈", prev_page_command),
+            InlineKeyboardButton::callback(page_counter_text.clone(), get_pages_command),
         ]
     } else {
         vec![
-            InlineKeyboardButton::callback(
-                "👈",
-                MenuCommands::get_cocktails_list_command_string(&current_page.previous()),
-            ),
-            InlineKeyboardButton::callback(
-                page_counter_text.clone(),
-                MenuCommands::get_cocktail_pages_command_string(&(available_pages)),
-            ),
-            InlineKeyboardButton::callback(
-                "👉",
-                MenuCommands::get_cocktails_list_command_string(&current_page.next()),
-            ),
+            InlineKeyboardButton::callback("👈", prev_page_command),
+            InlineKeyboardButton::callback(page_counter_text.clone(), get_pages_command),
+            InlineKeyboardButton::callback("👉", next_page_command),
         ]
     };
     keyboard.push(navigate_line);
@@ -186,7 +206,10 @@ pub fn get_cocktails_list_keyboard(
     InlineKeyboardMarkup::new(keyboard)
 }
 
-pub fn get_cocktail_pages_keyboard(total_pages: &u64) -> InlineKeyboardMarkup {
+pub fn get_cocktail_pages_keyboard(
+    total_pages: &u64,
+    source: &MenuCommands,
+) -> InlineKeyboardMarkup {
     let from_page: u64 = 1;
     let to_page = total_pages + 1;
     let pages = Vec::from_iter(from_page..to_page);
@@ -196,10 +219,16 @@ pub fn get_cocktail_pages_keyboard(total_pages: &u64) -> InlineKeyboardMarkup {
         let row = page_line
             .iter()
             .map(|page| {
-                InlineKeyboardButton::callback(
-                    page.to_string(),
-                    MenuCommands::get_cocktails_list_command_string(&PageNumber(page - 1)),
-                )
+                let list_command = match source {
+                    MenuCommands::CocktailsList(_) => {
+                        MenuCommands::get_cocktails_list_command_string(&PageNumber(page - 1))
+                    }
+                    MenuCommands::ShowFavorites(_) => {
+                        MenuCommands::get_favorite_cocktails_command_string(&PageNumber(page - 1))
+                    }
+                    _ => MenuCommands::get_cocktails_list_command_string(&PageNumber(page - 1)),
+                };
+                InlineKeyboardButton::callback(page.to_string(), list_command)
             })
             .collect();
         keyboard.push(row);
@@ -217,22 +246,24 @@ pub fn get_cocktail_card_navigate_keyboard(
 
     let mut navigate_row: Vec<InlineKeyboardButton> = vec![];
     let prev_page_command_string = match prev_page {
-        MenuCommands::CocktailsList(_) => {
-            MenuCommands::get_cocktails_list_command_string(&PageNumber(0))
+        MenuCommands::CocktailsList(page) => {
+            MenuCommands::get_cocktails_list_command_string(&PageNumber(*page))
         }
         MenuCommands::MainMenu => todo!(),
         MenuCommands::SearchByName => todo!(),
         MenuCommands::Register => todo!(),
         MenuCommands::ProfilePage => todo!(),
-        MenuCommands::SearchById(_, _) => todo!(),
-        MenuCommands::CocktailsPages(_) => todo!(),
+        MenuCommands::SearchById(_, _, _) => todo!(),
+        MenuCommands::CocktailsPages(_, _) => todo!(),
         MenuCommands::Unknown => todo!(),
         MenuCommands::AddToFavorite(_, _) => todo!(),
         MenuCommands::RemoveFromFavorite(_, _) => todo!(),
         MenuCommands::RegisterConfirmation => todo!(),
         MenuCommands::RemoveAccount => todo!(),
         MenuCommands::RemoveAccountConfirmation => todo!(),
-        MenuCommands::ShowFavorites => todo!(),
+        MenuCommands::ShowFavorites(page) => {
+            MenuCommands::get_favorite_cocktails_command_string(&PageNumber(*page))
+        }
     };
     navigate_row.push(InlineKeyboardButton::callback(
         "👈 Назад",
@@ -264,7 +295,7 @@ pub fn get_profile_page_keyboard() -> InlineKeyboardMarkup {
     let keyboard: Vec<Vec<InlineKeyboardButton>> = vec![
         vec![InlineKeyboardButton::callback(
             "❤ Показать избранное",
-            MenuCommands::ShowFavorites.as_ref(),
+            MenuCommands::get_favorite_cocktails_command_string(&PageNumber(0)),
         )],
         vec![InlineKeyboardButton::callback(
             "🗑 Удалить учетную запись",

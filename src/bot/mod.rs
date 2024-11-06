@@ -121,11 +121,9 @@ async fn callback_handler(
     _me: teloxide::types::Me,
     _update: Update,
     callback: CallbackQuery,
-    bot: Bot,
 ) -> Result<(), Box<dyn Error + Send + Sync>> {
     if let Some(ref callback_btn) = callback.data {
         let user_id = callback.from.id;
-        bot.answer_callback_query(&callback.id).await?;
 
         log::debug!("User {} press menu button: {}", user_id, callback_btn);
         let menu_cmd = MenuCommands::parse(callback_btn);
@@ -139,15 +137,7 @@ async fn callback_handler(
             }
             MenuCommands::CocktailsList(page) => {
                 let message_proc = MessageProcessor::new().await?;
-                let message_id = callback.clone().message.unwrap().id();
-                message_proc
-                    .send_cocktails_paged(
-                        &user_id,
-                        &callback.chat_id().unwrap(),
-                        &message_id,
-                        &page,
-                    )
-                    .await?;
+                message_proc.send_cocktails_paged(&callback, &page).await?;
             }
             MenuCommands::SearchByName => {
                 let message_proc = MessageProcessor::new().await?;
@@ -157,10 +147,7 @@ async fn callback_handler(
             }
             MenuCommands::Register => {
                 let message_proc = MessageProcessor::new().await?;
-                let message_id = callback.clone().message.unwrap().id();
-                message_proc
-                    .register_user(&user_id, &callback.chat_id().unwrap(), &message_id)
-                    .await?;
+                message_proc.register_user(&callback).await?;
             }
             MenuCommands::ProfilePage => {
                 let message_proc = MessageProcessor::new().await?;
@@ -169,12 +156,23 @@ async fn callback_handler(
                     .send_profile_page(&user_id, &callback.chat_id().unwrap(), &message_id)
                     .await?;
             }
-            MenuCommands::SearchById(cocktail_id, prev_page) => {
+            MenuCommands::SearchById(cocktail_id, prev_page, page_num) => {
                 let message_proc = MessageProcessor::new().await?;
                 let message_id = callback.clone().message.unwrap().id();
                 message_proc
                     .send_cocktail_page(
-                        &MenuCommands::parse(&prev_page),
+                        &MenuCommands::parse(
+                            format!(
+                                "{} {}",
+                                &prev_page,
+                                if let Some(page_num) = page_num {
+                                    page_num.to_string()
+                                } else {
+                                    "".to_string()
+                                }
+                            )
+                            .as_str(),
+                        ),
                         &user_id,
                         &callback.chat_id().unwrap(),
                         &message_id,
@@ -182,11 +180,12 @@ async fn callback_handler(
                     )
                     .await?;
             }
-            MenuCommands::CocktailsPages(total_pages) => {
+            MenuCommands::CocktailsPages(total_pages, prev_page) => {
                 let message_proc = MessageProcessor::new().await?;
                 let message_id = callback.clone().message.unwrap().id();
                 message_proc
                     .send_cocktails_pages(
+                        &MenuCommands::parse(&prev_page),
                         &user_id,
                         &callback.chat_id().unwrap(),
                         &message_id,
@@ -231,7 +230,10 @@ async fn callback_handler(
                     )
                     .await?;
             }
-            MenuCommands::RemoveAccount => {}
+            MenuCommands::RemoveAccount => {
+                let message_proc = MessageProcessor::new().await?;
+                message_proc.remove_user(&callback).await?;
+            }
             MenuCommands::RemoveAccountConfirmation => {
                 let message_proc = MessageProcessor::new().await?;
                 let message_id = callback.clone().message.unwrap().id();
@@ -243,7 +245,12 @@ async fn callback_handler(
                     )
                     .await?;
             }
-            MenuCommands::ShowFavorites => {}
+            MenuCommands::ShowFavorites(page) => {
+                let message_proc = MessageProcessor::new().await?;
+                message_proc
+                    .send_favorite_cocktails(&callback, &page)
+                    .await?;
+            }
             MenuCommands::Unknown => todo!(),
         };
     }
