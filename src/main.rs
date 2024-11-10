@@ -11,6 +11,7 @@ mod app;
 mod bot;
 mod domain;
 mod infrastructure;
+mod shared;
 
 #[tokio::main]
 async fn main() -> Result<()> {

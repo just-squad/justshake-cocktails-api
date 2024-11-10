@@ -7,7 +7,12 @@ pub mod message_processor;
 mod inline_keyboards;
 
 use commands::{MainCommands, MenuCommands};
-use message_processor::MessageProcessor;
+use message_processor::{
+    AddCocktailToFavoriteCommand, GetCocktailPageByIdCommand, GetCocktailPagesCommand,
+    GetCocktailsListCommand, GetFavoriteCocktailsListCommand, GetMainMenuCommand,
+    GetProfilePageCommand, GetRegisterUserConfigrationCommand, GetRemoveUserConfirmationCommand,
+    MessageProcessor, RegisterUserCommand, RemoveCocktailFromFavoriteCommand, RemoveUserCommand,
+};
 use std::{error::Error, sync::OnceLock};
 use teloxide::{
     adaptors::DefaultParseMode,
@@ -21,7 +26,7 @@ use teloxide::{
     Bot as TBot,
 };
 
-use crate::bot::configurations::BotConfig;
+use crate::{bot::configurations::BotConfig, shared::CommandHandler};
 
 pub type Bot = DefaultParseMode<TBot>;
 pub static INSTANCE: OnceLock<TgBotProvider> = OnceLock::new();
@@ -93,7 +98,12 @@ async fn main_commands_handler(
                 .chat_id()
                 .expect("Can't get chat id from telegram message");
             processor
-                .send_menu_to_user(&user_id, &chat_id, &msg.id, false)
+                .handle(GetMainMenuCommand {
+                    user_id,
+                    chat_id,
+                    message_id: msg.id,
+                    edit_message: false,
+                })
                 .await?;
         }
     };
@@ -132,12 +142,22 @@ async fn callback_handler(
                 let message_proc = MessageProcessor::new().await?;
                 let message_id = callback.clone().message.unwrap().id();
                 message_proc
-                    .send_menu_to_user(&user_id, &callback.chat_id().unwrap(), &message_id, true)
+                    .handle(GetMainMenuCommand {
+                        user_id,
+                        chat_id: callback.chat_id().unwrap(),
+                        message_id,
+                        edit_message: true,
+                    })
                     .await?;
             }
             MenuCommands::CocktailsList(page) => {
                 let message_proc = MessageProcessor::new().await?;
-                message_proc.send_cocktails_paged(&callback, &page).await?;
+                message_proc
+                    .handle(GetCocktailsListCommand {
+                        callback: callback.clone(),
+                        next_page: page,
+                    })
+                    .await?;
             }
             MenuCommands::SearchByName => {
                 let message_proc = MessageProcessor::new().await?;
@@ -147,21 +167,28 @@ async fn callback_handler(
             }
             MenuCommands::Register => {
                 let message_proc = MessageProcessor::new().await?;
-                message_proc.register_user(&callback).await?;
+                message_proc
+                    .handle(RegisterUserCommand {
+                        callback: callback.clone(),
+                    })
+                    .await?;
             }
             MenuCommands::ProfilePage => {
                 let message_proc = MessageProcessor::new().await?;
                 let message_id = callback.clone().message.unwrap().id();
                 message_proc
-                    .send_profile_page(&user_id, &callback.chat_id().unwrap(), &message_id)
+                    .handle(GetProfilePageCommand {
+                        chat_id: callback.chat_id().unwrap(),
+                        message_id,
+                    })
                     .await?;
             }
             MenuCommands::SearchById(cocktail_id, prev_page, page_num) => {
                 let message_proc = MessageProcessor::new().await?;
-                let message_id = callback.clone().message.unwrap().id();
                 message_proc
-                    .send_cocktail_page(
-                        &MenuCommands::parse(
+                    .handle(GetCocktailPageByIdCommand {
+                        callback: callback.clone(),
+                        prev_page: MenuCommands::parse(
                             format!(
                                 "{} {}",
                                 &prev_page,
@@ -173,82 +200,75 @@ async fn callback_handler(
                             )
                             .as_str(),
                         ),
-                        &user_id,
-                        &callback.chat_id().unwrap(),
-                        &message_id,
-                        &uuid::Uuid::parse_str(cocktail_id.as_str()).unwrap(),
-                    )
+                        cocktail_id: uuid::Uuid::parse_str(cocktail_id.as_str()).unwrap(),
+                    })
                     .await?;
             }
             MenuCommands::CocktailsPages(total_pages, prev_page) => {
                 let message_proc = MessageProcessor::new().await?;
-                let message_id = callback.clone().message.unwrap().id();
                 message_proc
-                    .send_cocktails_pages(
-                        &MenuCommands::parse(&prev_page),
-                        &user_id,
-                        &callback.chat_id().unwrap(),
-                        &message_id,
-                        &total_pages,
-                    )
+                    .handle(GetCocktailPagesCommand {
+                        callback: callback.clone(),
+                        prev_page: MenuCommands::parse(&prev_page),
+                        total_pages,
+                    })
                     .await?;
             }
             MenuCommands::AddToFavorite(coctail_id, prev_page) => {
                 let message_proc = MessageProcessor::new().await?;
-                let message_id = callback.clone().message.unwrap().id();
                 message_proc
-                    .add_coctail_to_favorite(
-                        &MenuCommands::parse(&prev_page),
-                        &user_id,
-                        &callback.chat_id().unwrap(),
-                        &message_id,
-                        &uuid::Uuid::parse_str(coctail_id.as_str()).unwrap(),
-                    )
+                    .handle(AddCocktailToFavoriteCommand {
+                        callback: callback.clone(),
+                        prev_page: MenuCommands::parse(&prev_page),
+                        cocktail_id: uuid::Uuid::parse_str(coctail_id.as_str()).unwrap(),
+                    })
                     .await?;
             }
             MenuCommands::RemoveFromFavorite(coctail_id, prev_page) => {
                 let message_proc = MessageProcessor::new().await?;
-                let message_id = callback.clone().message.unwrap().id();
                 message_proc
-                    .remove_coctail_from_favorite(
-                        &MenuCommands::parse(&prev_page),
-                        &user_id,
-                        &callback.chat_id().unwrap(),
-                        &message_id,
-                        &uuid::Uuid::parse_str(coctail_id.as_str()).unwrap(),
-                    )
+                    .handle(RemoveCocktailFromFavoriteCommand {
+                        callback: callback.clone(),
+                        prev_page: MenuCommands::parse(&prev_page),
+                        cocktail_id: uuid::Uuid::parse_str(coctail_id.as_str()).unwrap(),
+                    })
                     .await?;
             }
             MenuCommands::RegisterConfirmation => {
                 let message_proc = MessageProcessor::new().await?;
                 let message_id = callback.clone().message.unwrap().id();
                 message_proc
-                    .send_register_user_confirmation(
-                        &user_id,
-                        &callback.chat_id().unwrap(),
-                        &message_id,
-                    )
+                    .handle(GetRegisterUserConfigrationCommand {
+                        chat_id: callback.chat_id().unwrap(),
+                        message_id,
+                    })
                     .await?;
             }
             MenuCommands::RemoveAccount => {
                 let message_proc = MessageProcessor::new().await?;
-                message_proc.remove_user(&callback).await?;
+                message_proc
+                    .handle(RemoveUserCommand {
+                        callback: callback.clone(),
+                    })
+                    .await?;
             }
             MenuCommands::RemoveAccountConfirmation => {
                 let message_proc = MessageProcessor::new().await?;
                 let message_id = callback.clone().message.unwrap().id();
                 message_proc
-                    .send_remove_user_confirmation(
-                        &user_id,
-                        &callback.chat_id().unwrap(),
-                        &message_id,
-                    )
+                    .handle(GetRemoveUserConfirmationCommand {
+                        chat_id: callback.chat_id().unwrap(),
+                        message_id,
+                    })
                     .await?;
             }
             MenuCommands::ShowFavorites(page) => {
                 let message_proc = MessageProcessor::new().await?;
                 message_proc
-                    .send_favorite_cocktails(&callback, &page)
+                    .handle(GetFavoriteCocktailsListCommand {
+                        callback: callback.clone(),
+                        next_page: page,
+                    })
                     .await?;
             }
             MenuCommands::Unknown => todo!(),

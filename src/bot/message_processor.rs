@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use async_trait::async_trait;
 use teloxide::dispatching::dialogue::GetChatId;
 use teloxide::utils::markdown::escape;
 use uuid::Uuid;
@@ -7,6 +8,7 @@ use super::commands::MenuCommands;
 use super::inline_keyboards::{self, ListCoctailsSource};
 use crate::bot::inline_keyboards::PageNumber;
 use crate::domain::aggregates::user::User;
+use crate::shared::CommandHandler;
 use crate::{
     bot::TgBotProvider,
     domain::{
@@ -55,65 +57,73 @@ impl MessageProcessor<(), ()> {
     }
 }
 
-impl<TUserRepo, TCocktailRepo> MessageProcessor<TUserRepo, TCocktailRepo>
+pub struct GetMainMenuCommand {
+    pub user_id: UserId,
+    pub chat_id: ChatId,
+    pub message_id: MessageId,
+    pub edit_message: bool,
+}
+#[async_trait]
+impl<TUserRepo, TCocktailRepo> CommandHandler<GetMainMenuCommand>
+    for MessageProcessor<TUserRepo, TCocktailRepo>
 where
-    TUserRepo: UserRepo,
-    TCocktailRepo: CocktailRepo,
+    TUserRepo: UserRepo + Sync,
+    TCocktailRepo: CocktailRepo + Sync,
 {
-    /// .
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if .
-    pub async fn send_menu_to_user(
-        &self,
-        user_id: &UserId,
-        chat_id: &ChatId,
-        message_id: &MessageId,
-        edit_message: bool,
-    ) -> Result<()> {
-        let user_registered = self.user_repo.is_exist_by_telegram_id(&user_id.0).await?;
+    async fn handle(&self, command: GetMainMenuCommand) -> Result<()> {
+        let user_registered = self
+            .user_repo
+            .is_exist_by_telegram_id(&command.user_id.0)
+            .await?;
         let keyboard = inline_keyboards::get_main_menu_keyboard(&user_registered);
 
-        if edit_message {
-            let mut edit_message_text =
-                self.bot_provider
-                    .bot
-                    .edit_message_text(*chat_id, *message_id, "Основное меню: ");
+        if command.edit_message {
+            let mut edit_message_text = self.bot_provider.bot.edit_message_text(
+                command.chat_id,
+                command.message_id,
+                "Основное меню: ",
+            );
             edit_message_text = edit_message_text.reply_markup(keyboard.clone());
             edit_message_text.await?;
         } else {
             self.bot_provider
                 .bot
-                .send_message(*chat_id, "Основное меню:")
+                .send_message(command.chat_id, "Основное меню:")
                 .reply_markup(keyboard)
                 .await?;
         }
-
         Ok(())
     }
+}
 
-    pub async fn send_cocktails_paged(
-        &self,
-        callback: &CallbackQuery,
-        next_page: &u64,
-    ) -> Result<()> {
+pub struct GetCocktailsListCommand {
+    pub callback: CallbackQuery,
+    pub next_page: u64,
+}
+#[async_trait]
+impl<TUserRepo, TCocktailRepo> CommandHandler<GetCocktailsListCommand>
+    for MessageProcessor<TUserRepo, TCocktailRepo>
+where
+    TUserRepo: UserRepo + Sync,
+    TCocktailRepo: CocktailRepo + Sync,
+{
+    async fn handle(&self, command: GetCocktailsListCommand) -> Result<()> {
         let page_size: u64 = 10;
         let cocktails_filter = CocktailNamesFilter {
             ids: vec![],
             pagination: Pagination {
-                page: *next_page,
+                page: command.next_page,
                 items_per_page: page_size,
             },
         };
         let _cocktails_names = self.cocktail_repo.get_names(&cocktails_filter).await?;
         let keyboard = inline_keyboards::get_cocktails_list_keyboard(
             &_cocktails_names,
-            &PageNumber(*next_page),
+            &PageNumber(command.next_page),
             &page_size,
             ListCoctailsSource::MainMenu,
         );
-        let callback_cloned = callback.clone();
+        let callback_cloned = command.callback.clone();
         let chat_id = callback_cloned.chat_id().unwrap();
         let message_id = callback_cloned.message.unwrap().id();
         let mut edit_message_text =
@@ -125,35 +135,56 @@ where
 
         Ok(())
     }
+}
 
-    pub async fn send_cocktails_pages(
-        &self,
-        prev_page: &MenuCommands,
-        _user_id: &UserId,
-        chat_id: &ChatId,
-        message_id: &MessageId,
-        total_pages: &u64,
-    ) -> Result<()> {
-        let keyboard = inline_keyboards::get_cocktail_pages_keyboard(total_pages, prev_page);
+pub struct GetCocktailPagesCommand {
+    pub callback: CallbackQuery,
+    pub prev_page: MenuCommands,
+    pub total_pages: u64,
+}
+#[async_trait]
+impl<TUserRepo, TCocktailRepo> CommandHandler<GetCocktailPagesCommand>
+    for MessageProcessor<TUserRepo, TCocktailRepo>
+where
+    TUserRepo: UserRepo + Sync,
+    TCocktailRepo: CocktailRepo + Sync,
+{
+    async fn handle(&self, command: GetCocktailPagesCommand) -> Result<()> {
+        let callback_cloned = command.callback.clone();
+        let chat_id = callback_cloned.chat_id().unwrap();
+        let message_id = callback_cloned.message.unwrap().id();
+
+        let keyboard =
+            inline_keyboards::get_cocktail_pages_keyboard(&command.total_pages, &command.prev_page);
         let mut edit_message_text =
             self.bot_provider
                 .bot
-                .edit_message_text(*chat_id, *message_id, "Доступные страницы: ");
+                .edit_message_text(chat_id, message_id, "Доступные страницы: ");
         edit_message_text = edit_message_text.reply_markup(keyboard.clone());
         edit_message_text.await?;
 
         Ok(())
     }
+}
 
-    pub async fn send_cocktail_page(
-        &self,
-        prev_page: &MenuCommands,
-        user_id: &UserId,
-        chat_id: &ChatId,
-        message_id: &MessageId,
-        cocktail_id: &uuid::Uuid,
-    ) -> Result<()> {
-        let cocktail = self.cocktail_repo.get_by_id(cocktail_id).await?;
+pub struct GetCocktailPageByIdCommand {
+    pub callback: CallbackQuery,
+    pub prev_page: MenuCommands,
+    pub cocktail_id: uuid::Uuid,
+}
+#[async_trait]
+impl<TUserRepo, TCocktailRepo> CommandHandler<GetCocktailPageByIdCommand>
+    for MessageProcessor<TUserRepo, TCocktailRepo>
+where
+    TUserRepo: UserRepo + Sync,
+    TCocktailRepo: CocktailRepo + Sync,
+{
+    async fn handle(&self, command: GetCocktailPageByIdCommand) -> Result<()> {
+        let chat_id = command.callback.chat_id().unwrap();
+        let message_id = command.callback.message.unwrap().id();
+        let user_id = command.callback.from.id;
+
+        let cocktail = self.cocktail_repo.get_by_id(&command.cocktail_id).await?;
         match cocktail {
             Some(cock) => {
                 let mut result_string = format!("🍸*Коктейль:* {}\n", escape(&cock.russian_name));
@@ -195,25 +226,25 @@ where
                 let mut edit_message_text =
                     self.bot_provider
                         .bot
-                        .edit_message_text(*chat_id, *message_id, &result_string);
+                        .edit_message_text(chat_id, message_id, &result_string);
                 let keyboard = if let Some(user) = user {
-                    if user.favorite_cocktails.contains(cocktail_id) {
+                    if user.favorite_cocktails.contains(&command.cocktail_id) {
                         inline_keyboards::get_cocktail_card_navigate_keyboard(
-                            prev_page,
-                            cocktail_id,
+                            &command.prev_page,
+                            &command.cocktail_id,
                             &Some(true),
                         )
                     } else {
                         inline_keyboards::get_cocktail_card_navigate_keyboard(
-                            prev_page,
-                            cocktail_id,
+                            &command.prev_page,
+                            &command.cocktail_id,
                             &Some(false),
                         )
                     }
                 } else {
                     inline_keyboards::get_cocktail_card_navigate_keyboard(
-                        prev_page,
-                        cocktail_id,
+                        &command.prev_page,
+                        &command.cocktail_id,
                         &None,
                     )
                 };
@@ -225,29 +256,28 @@ where
             None => panic!("Coctail not found"),
         }
     }
+}
 
-    pub async fn send_cocktails_paged_filter_by_name(
-        &self,
-        _user_id: &UserId,
-        _chat_id: &ChatId,
-    ) -> Result<()> {
-        Ok(())
-    }
-
-    pub async fn send_register_user_confirmation(
-        &self,
-        _user_id: &UserId,
-        chat_id: &ChatId,
-        message_id: &MessageId,
-    ) -> Result<()> {
+pub struct GetRegisterUserConfigrationCommand {
+    pub chat_id: ChatId,
+    pub message_id: MessageId,
+}
+#[async_trait]
+impl<TUserRepo, TCocktailRepo> CommandHandler<GetRegisterUserConfigrationCommand>
+    for MessageProcessor<TUserRepo, TCocktailRepo>
+where
+    TUserRepo: UserRepo + Sync,
+    TCocktailRepo: CocktailRepo + Sync,
+{
+    async fn handle(&self, command: GetRegisterUserConfigrationCommand) -> Result<()> {
         let mut registration_confirmation_text = "Подтверждая регистрацию, вы соглашаетесь на то, что мы сохраняем ваш идентификатор пользователя Telegram. Другую информацию мы не собираем.\n\n".to_string();
         registration_confirmation_text.push_str("У вас появляется возможность сохранять любимые коктейли в свою личную подборку, чтобы проще было их искать.\n\n");
         registration_confirmation_text
             .push_str("В любой момент вы можете полностью удалить свой профиль.\n");
         registration_confirmation_text.push_str("Приятного использования ☺️");
         let mut edit_message_text = self.bot_provider.bot.edit_message_text(
-            *chat_id,
-            *message_id,
+            command.chat_id,
+            command.message_id,
             escape(&registration_confirmation_text),
         );
         let registration_confirmation_keyboard =
@@ -257,50 +287,22 @@ where
 
         Ok(())
     }
+}
 
-    pub async fn send_profile_page(
-        &self,
-        _user_id: &UserId,
-        chat_id: &ChatId,
-        message_id: &MessageId,
-    ) -> Result<()> {
-        let mut edit_message_text =
-            self.bot_provider
-                .bot
-                .edit_message_text(*chat_id, *message_id, "Личный кабинет:");
-        edit_message_text =
-            edit_message_text.reply_markup(inline_keyboards::get_profile_page_keyboard());
-        edit_message_text.await?;
-        Ok(())
-    }
-
-    pub async fn send_remove_user_confirmation(
-        &self,
-        _user_id: &UserId,
-        chat_id: &ChatId,
-        message_id: &MessageId,
-    ) -> Result<()> {
-        let mut remove_user_confirmation_text =
-            "Вы точно хотите удалить свой профиль?\n\n".to_string();
-
-        remove_user_confirmation_text.push_str("Все избранные коктейли будут удалены. 😔\n");
-
-        let mut edit_message_text = self.bot_provider.bot.edit_message_text(
-            *chat_id,
-            *message_id,
-            escape(&remove_user_confirmation_text),
-        );
-        edit_message_text = edit_message_text
-            .reply_markup(inline_keyboards::get_remove_user_confirmation_keyboard());
-        edit_message_text.await?;
-        Ok(())
-    }
-
-    pub async fn register_user(&self, callback_query: &CallbackQuery) -> Result<()> {
-        let callback = callback_query.clone();
-        let user_id = callback.from.id;
-        let chat_id = callback.chat_id().unwrap();
-        let message_id = callback.message.unwrap().id();
+pub struct RegisterUserCommand {
+    pub callback: CallbackQuery,
+}
+#[async_trait]
+impl<TUserRepo, TCocktailRepo> CommandHandler<RegisterUserCommand>
+    for MessageProcessor<TUserRepo, TCocktailRepo>
+where
+    TUserRepo: UserRepo + Sync,
+    TCocktailRepo: CocktailRepo + Sync,
+{
+    async fn handle(&self, command: RegisterUserCommand) -> Result<()> {
+        let user_id = command.callback.from.id;
+        let chat_id = command.callback.chat_id().unwrap();
+        let message_id = command.callback.message.unwrap().id();
 
         let user_to_add = User {
             id: Uuid::new_v4(),
@@ -312,23 +314,67 @@ where
         let callback_query_answer = self
             .bot_provider
             .bot
-            .answer_callback_query(&callback.id)
+            .answer_callback_query(&command.callback.id)
             .show_alert(true)
             .text("Вы успешно зарегистрированы".to_string())
             .await?;
         log::info!("Send callback register result {:?}", callback_query_answer);
 
-        self.send_profile_page(&user_id, &chat_id, &message_id)
-            .await?;
+        self.handle(GetMainMenuCommand {
+            user_id,
+            chat_id,
+            message_id,
+            edit_message: true,
+        })
+        .await?;
 
         Ok(())
     }
+}
 
-    pub async fn remove_user(&self, callback_query: &CallbackQuery) -> Result<()> {
-        let callback = callback_query.clone();
-        let user_id = callback.from.id;
-        let chat_id = callback.chat_id().unwrap();
-        let message_id = callback.message.unwrap().id();
+pub struct GetRemoveUserConfirmationCommand {
+    pub chat_id: ChatId,
+    pub message_id: MessageId,
+}
+#[async_trait]
+impl<TUserRepo, TCocktailRepo> CommandHandler<GetRemoveUserConfirmationCommand>
+    for MessageProcessor<TUserRepo, TCocktailRepo>
+where
+    TUserRepo: UserRepo + Sync,
+    TCocktailRepo: CocktailRepo + Sync,
+{
+    async fn handle(&self, command: GetRemoveUserConfirmationCommand) -> Result<()> {
+        let mut remove_user_confirmation_text =
+            "Вы точно хотите удалить свой профиль?\n\n".to_string();
+
+        remove_user_confirmation_text.push_str("Все избранные коктейли будут удалены. 😔\n");
+
+        let mut edit_message_text = self.bot_provider.bot.edit_message_text(
+            command.chat_id,
+            command.message_id,
+            escape(&remove_user_confirmation_text),
+        );
+        edit_message_text = edit_message_text
+            .reply_markup(inline_keyboards::get_remove_user_confirmation_keyboard());
+        edit_message_text.await?;
+        Ok(())
+    }
+}
+
+pub struct RemoveUserCommand {
+    pub callback: CallbackQuery,
+}
+#[async_trait]
+impl<TUserRepo, TCocktailRepo> CommandHandler<RemoveUserCommand>
+    for MessageProcessor<TUserRepo, TCocktailRepo>
+where
+    TUserRepo: UserRepo + Sync,
+    TCocktailRepo: CocktailRepo + Sync,
+{
+    async fn handle(&self, command: RemoveUserCommand) -> Result<()> {
+        let user_id = command.callback.from.id;
+        let chat_id = command.callback.chat_id().unwrap();
+        let message_id = command.callback.message.unwrap().id();
 
         let user = self.user_repo.get_by_telegram_id(&user_id.0).await?;
         if let Some(user) = user {
@@ -336,7 +382,7 @@ where
             let callback_query_answer = self
                 .bot_provider
                 .bot
-                .answer_callback_query(&callback.id)
+                .answer_callback_query(&command.callback.id)
                 .show_alert(true)
                 .text("Вы успешно удалили свою учетную запись".to_string())
                 .await?;
@@ -345,68 +391,126 @@ where
                 callback_query_answer
             );
 
-            self.send_menu_to_user(&user_id, &chat_id, &message_id, true)
-                .await?;
+            self.handle(GetMainMenuCommand {
+                user_id,
+                chat_id,
+                message_id,
+                edit_message: true,
+            })
+            .await?;
         }
         Ok(())
     }
+}
 
-    pub async fn add_coctail_to_favorite(
-        &self,
-        prev_page: &MenuCommands,
-        user_id: &UserId,
-        chat_id: &ChatId,
-        message_id: &MessageId,
-        cocktail_id: &uuid::Uuid,
-    ) -> Result<()> {
+pub struct GetProfilePageCommand {
+    pub chat_id: ChatId,
+    pub message_id: MessageId,
+}
+#[async_trait]
+impl<TUserRepo, TCocktailRepo> CommandHandler<GetProfilePageCommand>
+    for MessageProcessor<TUserRepo, TCocktailRepo>
+where
+    TUserRepo: UserRepo + Sync,
+    TCocktailRepo: CocktailRepo + Sync,
+{
+    async fn handle(&self, command: GetProfilePageCommand) -> Result<()> {
+        let mut edit_message_text = self.bot_provider.bot.edit_message_text(
+            command.chat_id,
+            command.message_id,
+            "Личный кабинет:",
+        );
+        edit_message_text =
+            edit_message_text.reply_markup(inline_keyboards::get_profile_page_keyboard());
+        edit_message_text.await?;
+        Ok(())
+    }
+}
+
+pub struct AddCocktailToFavoriteCommand {
+    pub callback: CallbackQuery,
+    pub prev_page: MenuCommands,
+    pub cocktail_id: uuid::Uuid,
+}
+#[async_trait]
+impl<TUserRepo, TCocktailRepo> CommandHandler<AddCocktailToFavoriteCommand>
+    for MessageProcessor<TUserRepo, TCocktailRepo>
+where
+    TUserRepo: UserRepo + Sync,
+    TCocktailRepo: CocktailRepo + Sync,
+{
+    async fn handle(&self, command: AddCocktailToFavoriteCommand) -> Result<()> {
+        let user_id = command.callback.from.id;
         let user = self.user_repo.get_by_telegram_id(&user_id.0).await?;
         if let Some(mut user) = user {
-            user.favorite_cocktails.push(*cocktail_id);
+            user.favorite_cocktails.push(command.cocktail_id);
             self.user_repo.update(&user).await?;
-            self.send_cocktail_page(prev_page, user_id, chat_id, message_id, cocktail_id)
-                .await?;
+            self.handle(GetCocktailPageByIdCommand {
+                callback: command.callback.clone(),
+                prev_page: command.prev_page,
+                cocktail_id: command.cocktail_id,
+            })
+            .await?;
             Ok(())
         } else {
             log::warn!("User with id {} not found in store", user_id.0);
             Ok(())
         }
     }
+}
 
-    pub async fn remove_coctail_from_favorite(
-        &self,
-        prev_page: &MenuCommands,
-        user_id: &UserId,
-        chat_id: &ChatId,
-        message_id: &MessageId,
-        cocktail_id: &uuid::Uuid,
-    ) -> Result<()> {
+pub struct RemoveCocktailFromFavoriteCommand {
+    pub callback: CallbackQuery,
+    pub prev_page: MenuCommands,
+    pub cocktail_id: uuid::Uuid,
+}
+#[async_trait]
+impl<TUserRepo, TCocktailRepo> CommandHandler<RemoveCocktailFromFavoriteCommand>
+    for MessageProcessor<TUserRepo, TCocktailRepo>
+where
+    TUserRepo: UserRepo + Sync,
+    TCocktailRepo: CocktailRepo + Sync,
+{
+    async fn handle(&self, command: RemoveCocktailFromFavoriteCommand) -> Result<()> {
+        let user_id = command.callback.from.id;
         let user = self.user_repo.get_by_telegram_id(&user_id.0).await?;
         if let Some(mut user) = user {
             let index = user
                 .favorite_cocktails
                 .iter()
-                .position(|x| *x == *cocktail_id)
+                .position(|x| *x == command.cocktail_id)
                 .unwrap();
             user.favorite_cocktails.remove(index);
             self.user_repo.update(&user).await?;
-            self.send_cocktail_page(prev_page, user_id, chat_id, message_id, cocktail_id)
-                .await?;
+            self.handle(GetCocktailPageByIdCommand {
+                callback: command.callback.clone(),
+                prev_page: command.prev_page,
+                cocktail_id: command.cocktail_id,
+            })
+            .await?;
             Ok(())
         } else {
             log::warn!("User with id {} not found in store", user_id.0);
             Ok(())
         }
     }
+}
 
-    pub async fn send_favorite_cocktails(
-        &self,
-        callback: &CallbackQuery,
-        next_page: &u64,
-    ) -> Result<()> {
-        let callback_cloned = callback.clone();
-        let user_id = callback_cloned.from.id;
-        let chat_id = callback_cloned.chat_id().unwrap();
-        let message_id = callback_cloned.message.unwrap().id();
+pub struct GetFavoriteCocktailsListCommand {
+    pub callback: CallbackQuery,
+    pub next_page: u64,
+}
+#[async_trait]
+impl<TUserRepo, TCocktailRepo> CommandHandler<GetFavoriteCocktailsListCommand>
+    for MessageProcessor<TUserRepo, TCocktailRepo>
+where
+    TUserRepo: UserRepo + Sync,
+    TCocktailRepo: CocktailRepo + Sync,
+{
+    async fn handle(&self, command: GetFavoriteCocktailsListCommand) -> Result<()> {
+        let user_id = command.callback.from.id;
+        let chat_id = command.callback.chat_id().unwrap();
+        let message_id = command.callback.message.unwrap().id();
 
         let user = self.user_repo.get_by_telegram_id(&user_id.0).await?;
         if let Some(user) = user {
@@ -414,14 +518,14 @@ where
             let cocktails_filter = CocktailNamesFilter {
                 ids: user.favorite_cocktails,
                 pagination: Pagination {
-                    page: *next_page,
+                    page: command.next_page,
                     items_per_page: page_size,
                 },
             };
             let _cocktails_names = self.cocktail_repo.get_names(&cocktails_filter).await?;
             let keyboard = inline_keyboards::get_cocktails_list_keyboard(
                 &_cocktails_names,
-                &PageNumber(*next_page),
+                &PageNumber(command.next_page),
                 &page_size,
                 ListCoctailsSource::Favorites,
             );
@@ -433,6 +537,20 @@ where
             edit_message_text.await?;
         };
 
+        Ok(())
+    }
+}
+
+impl<TUserRepo, TCocktailRepo> MessageProcessor<TUserRepo, TCocktailRepo>
+where
+    TUserRepo: UserRepo,
+    TCocktailRepo: CocktailRepo,
+{
+    pub async fn send_cocktails_paged_filter_by_name(
+        &self,
+        _user_id: &UserId,
+        _chat_id: &ChatId,
+    ) -> Result<()> {
         Ok(())
     }
 }
