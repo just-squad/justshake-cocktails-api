@@ -1,9 +1,8 @@
 use anyhow::Result;
-use std::sync::Arc;
+use std::{fs::File, io, path::Path, sync::Arc};
 
 use app::Application;
 use bot::TgBotProvider;
-use dotenv::dotenv;
 use infrastructure::RepositoryFactory;
 
 mod api;
@@ -15,7 +14,7 @@ mod shared;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    dotenv().ok();
+    load_app_cfg()?;
     pretty_env_logger::init();
     log::info!("Load application settings...");
     let app = Arc::new(Application::new());
@@ -42,4 +41,16 @@ async fn start_bot() {
         .get()
         .expect("Can't get instance of bot provider. Set instance before get");
     bot_provider.start_receive_messages().await;
+}
+
+fn load_app_cfg() -> Result<()> {
+    let local_env_path = Path::new(".env.local");
+    if local_env_path.exists() {
+        dotenvy::dotenv()?;
+        dotenvy::from_path(local_env_path)?;
+        Ok(())
+    } else {
+        dotenvy::dotenv().ok();
+        Ok(())
+    }
 }
