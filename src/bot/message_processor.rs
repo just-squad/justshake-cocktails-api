@@ -7,6 +7,7 @@ use uuid::Uuid;
 use super::commands::MenuCommands;
 use super::inline_keyboards::{self, ListCoctailsSource};
 use crate::bot::inline_keyboards::PageNumber;
+use crate::domain::aggregates::cocktail::CocktailFilter;
 use crate::domain::aggregates::user::User;
 use crate::shared::CommandHandler;
 use crate::{
@@ -121,7 +122,7 @@ where
             &_cocktails_names,
             &PageNumber(command.next_page),
             &page_size,
-            ListCoctailsSource::MainMenu,
+            ListCoctailsSource::CocktailList,
         );
         let callback_cloned = command.callback.clone();
         let chat_id = callback_cloned.chat_id().unwrap();
@@ -132,6 +133,103 @@ where
                 .edit_message_text(chat_id, message_id, "Коктейли: ");
         edit_message_text = edit_message_text.reply_markup(keyboard.clone());
         edit_message_text.await?;
+
+        Ok(())
+    }
+}
+
+pub struct GetCocktailsFilterByNameListCommand {
+    pub chat_id: ChatId,
+    pub message_id: Option<MessageId>,
+    pub cocktail_name_for_filter: String,
+    pub next_page: u64,
+}
+#[async_trait]
+impl<TUserRepo, TCocktailRepo> CommandHandler<GetCocktailsFilterByNameListCommand>
+    for MessageProcessor<TUserRepo, TCocktailRepo>
+where
+    TUserRepo: UserRepo + Sync,
+    TCocktailRepo: CocktailRepo + Sync,
+{
+    async fn handle(&self, command: GetCocktailsFilterByNameListCommand) -> Result<()> {
+        let page_size: u64 = 10;
+        let cocktails_filter = CocktailFilter {
+            ids: None,
+            names: Some(vec![command.cocktail_name_for_filter.clone()]),
+            russian_names: Some(vec![command.cocktail_name_for_filter.clone()]),
+            pagination: Pagination {
+                page: command.next_page,
+                items_per_page: page_size,
+            },
+        };
+        let _cocktails_names = self.cocktail_repo.get_by_filter(&cocktails_filter).await?;
+        let keyboard = inline_keyboards::get_cocktails_list_keyboard(
+            &_cocktails_names,
+            &PageNumber(command.next_page),
+            &page_size,
+            ListCoctailsSource::CocktailListByName,
+        );
+        let _ = if let Some(message_id) = command.message_id {
+            let mut send_message = self.bot_provider.bot.edit_message_text(
+                command.chat_id,
+                message_id,
+                escape("Коктейли: "),
+            );
+            send_message = send_message.reply_markup(keyboard.clone());
+            send_message.await?;
+        } else {
+            let mut send_message = self
+                .bot_provider
+                .bot
+                .send_message(command.chat_id, escape("Коктейли: "));
+            send_message = send_message.reply_markup(keyboard.clone());
+            send_message.await?;
+        };
+
+        Ok(())
+    }
+}
+
+pub struct GetFavoriteCocktailsListCommand {
+    pub callback: CallbackQuery,
+    pub next_page: u64,
+}
+#[async_trait]
+impl<TUserRepo, TCocktailRepo> CommandHandler<GetFavoriteCocktailsListCommand>
+    for MessageProcessor<TUserRepo, TCocktailRepo>
+where
+    TUserRepo: UserRepo + Sync,
+    TCocktailRepo: CocktailRepo + Sync,
+{
+    async fn handle(&self, command: GetFavoriteCocktailsListCommand) -> Result<()> {
+        let user_id = command.callback.from.id;
+        let chat_id = command.callback.chat_id().unwrap();
+        let message_id = command.callback.message.unwrap().id();
+
+        let user = self.user_repo.get_by_telegram_id(&user_id.0).await?;
+        if let Some(user) = user {
+            let page_size: u64 = 10;
+            let cocktails_filter = CocktailNamesFilter {
+                ids: user.favorite_cocktails,
+                pagination: Pagination {
+                    page: command.next_page,
+                    items_per_page: page_size,
+                },
+            };
+            let _cocktails_names = self.cocktail_repo.get_names(&cocktails_filter).await?;
+            let keyboard = inline_keyboards::get_cocktails_list_keyboard(
+                &_cocktails_names,
+                &PageNumber(command.next_page),
+                &page_size,
+                ListCoctailsSource::Favorites,
+            );
+            let mut edit_message_text =
+                self.bot_provider
+                    .bot
+                    .edit_message_text(chat_id, message_id, "Коктейли: ");
+            edit_message_text = edit_message_text.reply_markup(keyboard.clone());
+            edit_message_text.await?;
+        };
 
         Ok(())
     }
@@ -493,64 +591,5 @@ where
             log::warn!("User with id {} not found in store", user_id.0);
             Ok(())
         }
-    }
-}
-
-pub struct GetFavoriteCocktailsListCommand {
-    pub callback: CallbackQuery,
-    pub next_page: u64,
-}
-#[async_trait]
-impl<TUserRepo, TCocktailRepo> CommandHandler<GetFavoriteCocktailsListCommand>
-    for MessageProcessor<TUserRepo, TCocktailRepo>
-where
-    TUserRepo: UserRepo + Sync,
-    TCocktailRepo: CocktailRepo + Sync,
-{
-    async fn handle(&self, command: GetFavoriteCocktailsListCommand) -> Result<()> {
-        let user_id = command.callback.from.id;
-        let chat_id = command.callback.chat_id().unwrap();
-        let message_id = command.callback.message.unwrap().id();
-
-        let user = self.user_repo.get_by_telegram_id(&user_id.0).await?;
-        if let Some(user) = user {
-            let page_size: u64 = 10;
-            let cocktails_filter = CocktailNamesFilter {
-                ids: user.favorite_cocktails,
-                pagination: Pagination {
-                    page: command.next_page,
-                    items_per_page: page_size,
-                },
-            };
-            let _cocktails_names = self.cocktail_repo.get_names(&cocktails_filter).await?;
-            let keyboard = inline_keyboards::get_cocktails_list_keyboard(
-                &_cocktails_names,
-                &PageNumber(command.next_page),
-                &page_size,
-                ListCoctailsSource::Favorites,
-            );
-            let mut edit_message_text =
-                self.bot_provider
-                    .bot
-                    .edit_message_text(chat_id, message_id, "Коктейли: ");
-            edit_message_text = edit_message_text.reply_markup(keyboard.clone());
-            edit_message_text.await?;
-        };
-
-        Ok(())
-    }
-}
-
-impl<TUserRepo, TCocktailRepo> MessageProcessor<TUserRepo, TCocktailRepo>
-where
-    TUserRepo: UserRepo,
-    TCocktailRepo: CocktailRepo,
-{
-    pub async fn send_cocktails_paged_filter_by_name(
-        &self,
-        _user_id: &UserId,
-        _chat_id: &ChatId,
-    ) -> Result<()> {
-        Ok(())
     }
 }

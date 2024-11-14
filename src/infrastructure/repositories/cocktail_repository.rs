@@ -89,11 +89,57 @@ impl CocktailRepo for CocktailRepository {
             .context(format!("Coctail with id {} not found", uuid_mongo))
     }
 
-    async fn get_by_filter(&self, _filter: &CocktailFilter) -> Result<CocktailsPaged> {
+    async fn get_by_filter(&self, filter: &CocktailFilter) -> Result<CocktailsPaged> {
         let _cocktail_collection = self.db_client.get_cocktails_collection();
+        let filter_by_ids = if let Some(ids) = &filter.ids {
+            let uuids_doc: Vec<mongodb::bson::Document> = ids
+                .iter()
+                .map(|id| doc! {"id": mongodb::bson::Uuid::parse_str(id.to_string()).unwrap()})
+                .collect();
+            doc! {"$or":uuids_doc}
+        } else {
+            doc! {}
+        };
+        let filter_by_en_names = if let Some(names) = &filter.names {
+            let names_doc: Vec<mongodb::bson::Document> =
+                names.iter().map(|name| doc! {"name": doc!{"$regex": mongodb::bson::Regex{ pattern: format!("[a-zA-Zа-яА-Я0-9 ]*({})[a-zA-Zа-яА-Я0-9 ]*", name), options: "mi".to_string() }}}).collect();
+            doc! {"$or": names_doc}
+        } else {
+            doc! {}
+        };
+        let filter_by_russian_names = if let Some(rus_names) = &filter.russian_names {
+            let names_doc: Vec<mongodb::bson::Document> =
+                rus_names.iter().map(|name| doc! {"russian_name": doc!{"$regex": mongodb::bson::Regex{ pattern: format!("[a-zA-Zа-яА-Я0-9 ]*({})[a-zA-Zа-яА-Я0-9 ]*", name), options: "mi".to_string() }}}).collect();
+            doc! {"$or": names_doc}
+        } else {
+            doc! {}
+        };
+        let filter_by_names = doc! {"$or": vec![filter_by_en_names, filter_by_russian_names]};
+        let filter_document = doc! {"$and": vec![filter_by_names, filter_by_ids]};
+        let result = self
+            .db_client
+            .get_cocktails_collection()
+            .find(filter_document.clone())
+            .projection(doc! {"id":1, "russian_name":1})
+            .limit(filter.pagination.items_per_page as i64)
+            .skip(filter.pagination.page * filter.pagination.items_per_page)
+            .await
+            .context("failed to find")?
+            .map(|x| x.map(|x| x.into()))
+            .collect::<Result<_, _>>()
+            .await
+            .context("fail to collect cocktails in result")?;
+
+        let count_by_filter = self
+            .db_client
+            .get_cocktails_collection()
+            .count_documents(filter_document.clone())
+            .await
+            .context("failed to count cocktail documents")?;
+
         let result = CocktailsPaged {
-            items: vec![],
-            total_count: 0,
+            items: result,
+            total_count: count_by_filter,
         };
 
         Ok(result)

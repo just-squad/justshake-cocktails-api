@@ -24,8 +24,9 @@ impl PageNumber {
 }
 
 pub enum ListCoctailsSource {
-    MainMenu,
+    CocktailList,
     Favorites,
+    CocktailListByName,
 }
 
 #[derive(Debug)]
@@ -126,8 +127,13 @@ pub fn get_cocktails_list_keyboard(
             .map(|cocktail_info| {
                 let current_page_v = current_page.0;
                 let command = match source {
-                    ListCoctailsSource::MainMenu => &MenuCommands::CocktailsList(current_page_v),
+                    ListCoctailsSource::CocktailList => {
+                        &MenuCommands::CocktailsList(current_page_v)
+                    }
                     ListCoctailsSource::Favorites => &MenuCommands::ShowFavorites(current_page_v),
+                    ListCoctailsSource::CocktailListByName => {
+                        &MenuCommands::CocktailsListByName(current_page_v)
+                    }
                 };
                 InlineKeyboardButton::callback(
                     cocktail_info.russian_name.to_owned(),
@@ -137,7 +143,11 @@ pub fn get_cocktails_list_keyboard(
             .collect();
         keyboard.push(row);
     }
-    let available_pages: u64 = (cocktails_paged.total_count / page_size) + 1;
+    let available_pages: u64 = if cocktails_paged.total_count % page_size > 0 {
+        (cocktails_paged.total_count / page_size) + 1
+    } else {
+        cocktails_paged.total_count / page_size
+    };
     let page_counter_text = escape(
         format!(
             "{}/{}",
@@ -146,30 +156,30 @@ pub fn get_cocktails_list_keyboard(
         )
         .as_str(),
     );
-    let next_page_command = match source {
-        ListCoctailsSource::MainMenu => {
-            MenuCommands::get_cocktails_list_command_string(&current_page.next())
-        }
-        ListCoctailsSource::Favorites => {
-            MenuCommands::get_favorite_cocktails_command_string(&current_page.next())
-        }
-    };
-    let prev_page_command = match source {
-        ListCoctailsSource::MainMenu => {
-            MenuCommands::get_cocktails_list_command_string(&current_page.previous())
-        }
-        ListCoctailsSource::Favorites => {
-            MenuCommands::get_favorite_cocktails_command_string(&current_page.previous())
-        }
-    };
-    let get_pages_command = match source {
-        ListCoctailsSource::MainMenu => MenuCommands::get_cocktail_pages_command_string(
-            &available_pages,
-            &MenuCommands::CocktailsList(0),
+    let (next_page_command, prev_page_command, get_pages_command) = match source {
+        ListCoctailsSource::CocktailList => (
+            MenuCommands::get_cocktails_list_command_string(&current_page.next()),
+            MenuCommands::get_cocktails_list_command_string(&current_page.previous()),
+            MenuCommands::get_cocktail_pages_command_string(
+                &available_pages,
+                &MenuCommands::CocktailsList(0),
+            ),
         ),
-        ListCoctailsSource::Favorites => MenuCommands::get_cocktail_pages_command_string(
-            &available_pages,
-            &MenuCommands::ShowFavorites(0),
+        ListCoctailsSource::Favorites => (
+            MenuCommands::get_favorite_cocktails_command_string(&current_page.next()),
+            MenuCommands::get_favorite_cocktails_command_string(&current_page.previous()),
+            MenuCommands::get_cocktail_pages_command_string(
+                &available_pages,
+                &MenuCommands::ShowFavorites(0),
+            ),
+        ),
+        ListCoctailsSource::CocktailListByName => (
+            MenuCommands::get_cocktails_list_by_name_command_string(&current_page.next()),
+            MenuCommands::get_cocktails_list_by_name_command_string(&current_page.previous()),
+            MenuCommands::get_cocktail_pages_command_string(
+                &available_pages,
+                &MenuCommands::CocktailsListByName(0),
+            ),
         ),
     };
 
@@ -226,6 +236,11 @@ pub fn get_cocktail_pages_keyboard(
                     MenuCommands::ShowFavorites(_) => {
                         MenuCommands::get_favorite_cocktails_command_string(&PageNumber(page - 1))
                     }
+                    MenuCommands::CocktailsListByName(_) => {
+                        MenuCommands::get_cocktails_list_by_name_command_string(&PageNumber(
+                            page - 1,
+                        ))
+                    }
                     _ => MenuCommands::get_cocktails_list_command_string(&PageNumber(page - 1)),
                 };
                 InlineKeyboardButton::callback(page.to_string(), list_command)
@@ -249,6 +264,12 @@ pub fn get_cocktail_card_navigate_keyboard(
         MenuCommands::CocktailsList(page) => {
             MenuCommands::get_cocktails_list_command_string(&PageNumber(*page))
         }
+        MenuCommands::ShowFavorites(page) => {
+            MenuCommands::get_favorite_cocktails_command_string(&PageNumber(*page))
+        }
+        MenuCommands::CocktailsListByName(page) => {
+            MenuCommands::get_cocktails_list_by_name_command_string(&PageNumber(*page))
+        }
         MenuCommands::MainMenu => todo!(),
         MenuCommands::SearchByName => todo!(),
         MenuCommands::Register => todo!(),
@@ -256,14 +277,11 @@ pub fn get_cocktail_card_navigate_keyboard(
         MenuCommands::SearchById(_, _, _) => todo!(),
         MenuCommands::CocktailsPages(_, _) => todo!(),
         MenuCommands::Unknown => todo!(),
-        MenuCommands::AddToFavorite(_, _) => todo!(),
-        MenuCommands::RemoveFromFavorite(_, _) => todo!(),
+        MenuCommands::AddToFavorite(_, _, _) => todo!(),
+        MenuCommands::RemoveFromFavorite(_, _, _) => todo!(),
         MenuCommands::RegisterConfirmation => todo!(),
         MenuCommands::RemoveAccount => todo!(),
         MenuCommands::RemoveAccountConfirmation => todo!(),
-        MenuCommands::ShowFavorites(page) => {
-            MenuCommands::get_favorite_cocktails_command_string(&PageNumber(*page))
-        }
     };
     navigate_row.push(InlineKeyboardButton::callback(
         "👈 Назад",

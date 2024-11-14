@@ -15,7 +15,7 @@ pub enum MenuCommands {
     #[strum(to_string = "mam")]
     MainMenu = 0,
     #[strum(to_string = "col")]
-    CocktailsList(u64) = 1,
+    CocktailsList(/*page_num*/ u64) = 1,
     #[strum(serialize = "sbn")]
     SearchByName = 2,
     #[strum(serialize = "reg")]
@@ -23,13 +23,25 @@ pub enum MenuCommands {
     #[strum(serialize = "prp")]
     ProfilePage = 4,
     #[strum(serialize = "sbi")]
-    SearchById(String, String, Option<u64>) = 5,
+    SearchById(
+        /*cocktail_id*/ String,
+        /*prev_page_command*/ String,
+        /*prev_page_num*/ Option<u64>,
+    ) = 5,
     #[strum(serialize = "cop")]
-    CocktailsPages(u64, String) = 6,
+    CocktailsPages(/*total_pages*/ u64, /*source_page*/ String) = 6,
     #[strum(serialize = "atf")]
-    AddToFavorite(String, String) = 7,
+    AddToFavorite(
+        /*cocktail_id*/ String,
+        /*prev_apge_command*/ String,
+        /*prev_page_number*/ Option<u64>,
+    ) = 7,
     #[strum(serialize = "rff")]
-    RemoveFromFavorite(String, String) = 8,
+    RemoveFromFavorite(
+        /*cocktail_id*/ String,
+        /*prev_page_command*/ String,
+        /*prev_apge_number*/ Option<u64>,
+    ) = 8,
     #[strum(serialize = "rec")]
     RegisterConfirmation = 9,
     #[strum(serialize = "rea")]
@@ -38,6 +50,8 @@ pub enum MenuCommands {
     RemoveAccountConfirmation = 11,
     #[strum(serialize = "shf")]
     ShowFavorites(u64) = 12,
+    #[strum(serialize = "cln")]
+    CocktailsListByName(/*page_number*/ u64) = 13,
 
     Unknown = 99999,
 }
@@ -83,17 +97,37 @@ impl MenuCommands {
         /* Cocktails page */
         else if cmd == MenuCommands::CocktailsPages(0, String::new()).as_ref() {
             let params: Vec<&str> = param.trim().split(" ").collect();
-            MenuCommands::CocktailsPages(params[0].parse().unwrap_or_default(), params[1].to_string())
+            MenuCommands::CocktailsPages(
+                params[0].parse().unwrap_or_default(),
+                params[1].to_string(),
+            )
         }
         /* Add to favorite */
-        else if cmd == MenuCommands::AddToFavorite(String::new(), String::new()).as_ref() {
+        else if cmd == MenuCommands::AddToFavorite(String::new(), String::new(), Some(0)).as_ref()
+        {
             let params: Vec<&str> = param.trim().split(" ").collect();
-            MenuCommands::AddToFavorite(params[0].to_string(), params[1].to_string())
+            MenuCommands::AddToFavorite(
+                params[0].to_string(),
+                params[1].to_string(),
+                match params[2].parse::<u64>() {
+                    Ok(val) => Some(val),
+                    _err => None,
+                },
+            )
         }
         /* Remove from favorite */
-        else if cmd == MenuCommands::RemoveFromFavorite(String::new(), String::new()).as_ref() {
+        else if cmd
+            == MenuCommands::RemoveFromFavorite(String::new(), String::new(), Some(0)).as_ref()
+        {
             let params: Vec<&str> = param.trim().split(" ").collect();
-            MenuCommands::RemoveFromFavorite(params[0].to_string(), params[1].to_string())
+            MenuCommands::RemoveFromFavorite(
+                params[0].to_string(),
+                params[1].to_string(),
+                match params[2].parse::<u64>() {
+                    Ok(val) => Some(val),
+                    _err => None,
+                },
+            )
         }
         /* Register confirmation */
         else if cmd == MenuCommands::RegisterConfirmation.as_ref() {
@@ -111,6 +145,9 @@ impl MenuCommands {
         else if cmd == MenuCommands::ShowFavorites(0).as_ref() {
             let ulong_param = param.parse().unwrap_or_default();
             MenuCommands::ShowFavorites(ulong_param)
+        } else if cmd == MenuCommands::CocktailsListByName(0).as_ref() {
+            let ulong_param = param.parse().unwrap_or_default();
+            MenuCommands::CocktailsListByName(ulong_param)
         } else {
             MenuCommands::Unknown
         }
@@ -126,11 +163,19 @@ impl MenuCommands {
         format!("{} {}", cmd, page.0)
     }
 
+    pub fn get_cocktails_list_by_name_command_string(page: &PageNumber) -> String {
+        let cmd = String::from(MenuCommands::CocktailsListByName(0).as_ref());
+        format!("{} {}", cmd, page.0)
+    }
+
     pub fn get_main_menu_command_string() -> String {
         String::from(MenuCommands::MainMenu.as_ref())
     }
 
-    pub fn get_cocktail_pages_command_string(total_pages: &u64, source_page: &MenuCommands) -> String {
+    pub fn get_cocktail_pages_command_string(
+        total_pages: &u64,
+        source_page: &MenuCommands,
+    ) -> String {
         let cmd = String::from(MenuCommands::CocktailsPages(0, String::new()).as_ref());
         format!("{} {} {}", cmd, total_pages, source_page.as_ref())
     }
@@ -145,6 +190,7 @@ impl MenuCommands {
         let prev_list_page = match source_page {
             MenuCommands::CocktailsList(page) => Some(*page),
             MenuCommands::ShowFavorites(page) => Some(*page),
+            MenuCommands::CocktailsListByName(page) => Some(*page),
             _ => None,
         };
         format!(
@@ -164,18 +210,53 @@ impl MenuCommands {
         cocktail_id: &uuid::Uuid,
         source_page: &MenuCommands,
     ) -> String {
-        let cmd = String::from(MenuCommands::AddToFavorite(String::new(), String::new()).as_ref());
+        let prev_list_page = match source_page {
+            MenuCommands::CocktailsList(page) => Some(*page),
+            MenuCommands::ShowFavorites(page) => Some(*page),
+            MenuCommands::CocktailsListByName(page) => Some(*page),
+            _ => None,
+        };
+        let cmd = String::from(
+            MenuCommands::AddToFavorite(String::new(), String::new(), Some(0)).as_ref(),
+        );
         let prev_page_command = String::from(source_page.as_ref());
-        format!("{} {} {}", cmd, cocktail_id, prev_page_command)
+        format!(
+            "{} {} {} {}",
+            cmd,
+            cocktail_id,
+            prev_page_command,
+            if let Some(prev_list_page) = prev_list_page {
+                prev_list_page.to_string()
+            } else {
+                "".to_string()
+            }
+        )
     }
 
     pub fn get_remove_cocktail_from_favourite_command_string(
         cocktail_id: &uuid::Uuid,
         source_page: &MenuCommands,
     ) -> String {
-        let cmd =
-            String::from(MenuCommands::RemoveFromFavorite(String::new(), String::new()).as_ref());
+        let prev_list_page = match source_page {
+            MenuCommands::CocktailsList(page) => Some(*page),
+            MenuCommands::ShowFavorites(page) => Some(*page),
+            MenuCommands::CocktailsListByName(page) => Some(*page),
+            _ => None,
+        };
+        let cmd = String::from(
+            MenuCommands::RemoveFromFavorite(String::new(), String::new(), Some(0)).as_ref(),
+        );
         let prev_page_command = String::from(source_page.as_ref());
-        format!("{} {} {}", cmd, cocktail_id, prev_page_command)
+        format!(
+            "{} {} {} {}",
+            cmd,
+            cocktail_id,
+            prev_page_command,
+            if let Some(prev_list_page) = prev_list_page {
+                prev_list_page.to_string()
+            } else {
+                "".to_string()
+            }
+        )
     }
 }

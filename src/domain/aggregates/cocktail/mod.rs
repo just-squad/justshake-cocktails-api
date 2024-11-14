@@ -54,9 +54,9 @@ pub struct CocktailsPaged {
 
 #[derive(Clone, Debug)]
 pub struct CocktailFilter {
-    pub ids: Vec<Uuid>,
-    pub names: Vec<String>,
-    pub russian_names: Vec<String>,
+    pub ids: Option<Vec<Uuid>>,
+    pub names: Option<Vec<String>>,
+    pub russian_names: Option<Vec<String>>,
     pub pagination: crate::domain::Pagination,
 }
 

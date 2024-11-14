@@ -1,5 +1,5 @@
 use anyhow::Result;
-use std::{fs::File, io, path::Path, sync::Arc};
+use std::{path::Path, sync::Arc};
 
 use app::Application;
 use bot::TgBotProvider;
@@ -18,6 +18,7 @@ async fn main() -> Result<()> {
     pretty_env_logger::init();
     log::info!("Load application settings...");
     let app = Arc::new(Application::new());
+    log::info!("tg token {}", app.config.bot_conf.bot_token);
 
     log::info!("Starting bot...");
     let bot_provider = TgBotProvider::new(&app.config.bot_conf);
