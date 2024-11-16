@@ -7,7 +7,7 @@ use uuid::Uuid;
 use super::commands::MenuCommands;
 use super::inline_keyboards::{self, ListCoctailsSource};
 use crate::bot::inline_keyboards::PageNumber;
-use crate::domain::aggregates::cocktail::CocktailFilter;
+use crate::domain::aggregates::cocktail::{CocktailFilter, CocktailsPaged};
 use crate::domain::aggregates::user::User;
 use crate::shared::CommandHandler;
 use crate::{
@@ -209,16 +209,23 @@ where
         let user = self.user_repo.get_by_telegram_id(&user_id.0).await?;
         if let Some(user) = user {
             let page_size: u64 = 10;
-            let cocktails_filter = CocktailNamesFilter {
-                ids: user.favorite_cocktails,
-                pagination: Pagination {
-                    page: command.next_page,
-                    items_per_page: page_size,
-                },
+            let cocktails_names = if user.favorite_cocktails.is_empty() {
+                CocktailsPaged {
+                    items: vec![],
+                    total_count: 0,
+                }
+            } else {
+                let cocktails_filter = CocktailNamesFilter {
+                    ids: user.favorite_cocktails,
+                    pagination: Pagination {
+                        page: command.next_page,
+                        items_per_page: page_size,
+                    },
+                };
+                self.cocktail_repo.get_names(&cocktails_filter).await?
             };
-            let _cocktails_names = self.cocktail_repo.get_names(&cocktails_filter).await?;
             let keyboard = inline_keyboards::get_cocktails_list_keyboard(
-                &_cocktails_names,
+                &cocktails_names,
                 &PageNumber(command.next_page),
                 &page_size,
                 ListCoctailsSource::Favorites,
