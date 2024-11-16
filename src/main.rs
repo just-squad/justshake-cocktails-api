@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use std::{path::Path, sync::Arc};
 
 use app::Application;
@@ -45,10 +45,13 @@ async fn start_bot() {
 }
 
 fn load_app_cfg() -> Result<()> {
-    let local_env_path = Path::new(".env.local");
+    let local_env_path = Path::new("local.env");
     if local_env_path.exists() {
-        dotenvy::dotenv()?;
-        dotenvy::from_path(local_env_path)?;
+        //dotenvy::dotenv().context("env file not found!")?;
+        dotenvy::from_path(local_env_path).context(format!(
+            "{} file not found",
+            local_env_path.to_str().unwrap()
+        ))?;
         Ok(())
     } else {
         dotenvy::dotenv().ok();

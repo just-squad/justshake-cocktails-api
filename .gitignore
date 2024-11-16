@@ -1,6 +1,5 @@
 # -----rust-----
-.env
-.env.local
+local.env
 target/
 debug/
 
@@ -16,9 +15,9 @@ debug/
 /tests
 /.compose
 /.bin
-/cmd/scraper/.inshaker-cache
-/cmd/scraper/.html-example
-/config/secret-config.yml
+/old-go/cmd/scraper/.inshaker-cache
+/old-go/cmd/scraper/.html-example
+/old-go/config/secret-config.yml
 
 
 ## Ignore Visual Studio temporary files, build results, and
