@@ -1,38 +1,33 @@
-# syntax=docker/dockerfile:1
-
-FROM golang:alpine AS builder
-LABEL stage=gobuilder
-ENV CGO_ENABLED 0
-ENV GOOS linux
-LABEL authors="just-squad"
-
-# Set destination for COPY
-WORKDIR /build
-
-# Download Go modules
-ADD go.mod .
-ADD go.sum .
-RUN go mod download
-
-# Copy the source code. Note the slash at the end, as explained in
-# https://docs.docker.com/engine/reference/builder/#copy
-COPY . .
-
-# Build
-RUN go build -ldflags="-s -w" -o /app/js-cocktails ./cmd/app/main.go
-
-# Optional:
-# To bind to a TCP port, runtime parameters must be supplied to the docker command.
-# But we can document in the Dockerfile what ports
-# the application is going to listen on by default.
-# https://docs.docker.com/engine/reference/builder/#expose
-#EXPOSE 8080
-
-FROM alpine
+# Step 1: Compute a recipe file
+FROM lukemathwalker/cargo-chef:latest-rust-1 AS chef
 WORKDIR /app
 
-COPY --from=builder /app/js-cocktails /app/js-cocktails
-COPY --from=builder /build/config/config.yml /app/config/config.yml
+# Step 2: Compute a recipe file
+FROM chef as planner
+WORKDIR /app
+COPY Cargo.toml Cargo.lock ./
+COPY src ./src
+RUN cargo chef prepare --recipe-path recipe.json
 
-# Run
-CMD ["./js-cocktails"]
+# Step 4: Build the binary
+FROM chef as builder
+WORKDIR /app
+COPY --from=planner /app/recipe.json recipe.json
+RUN rustup target add x86_64-unknown-linux-musl
+ENV TARGET_CC=x86_64-linux-musl-gcc
+RUN apt-get update && apt-get install -y \
+  gcc-aarch64-linux-gnu musl-tools musl-dev libssl-dev perl cmake make \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN cargo chef cook --release --target x86_64-unknown-linux-musl --recipe-path recipe.json --features vendored-openssl
+
+COPY Cargo.toml Cargo.lock ./
+COPY src ./src
+RUN cargo build --release --target x86_64-unknown-linux-musl --features vendored-openssl
+
+# Step 5: Create the final image with binary and deps
+FROM alpine:3.17
+WORKDIR /app
+COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/justshake-cocktails-api .
+ENTRYPOINT ["./justshake-cocktails-api"]
+
