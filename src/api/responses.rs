@@ -4,14 +4,8 @@ use warp::reject::Rejection;
 pub type ApiResult<T> = std::result::Result<T, Rejection>;
 
 #[derive(Serialize)]
-pub struct ApiResponse {
-    pub status: ApiResponseStatus,
-    pub message: String,
+pub struct ApiResponse<TMessage> {
+    pub status: warp::http::StatusCode,
+    pub message: TMessage,
 }
 
-#[derive(Serialize)]
-pub enum ApiResponseStatus {
-    Ok = 1,
-    BadRequest = 2,
-    InternalServerError = 3,
-}
