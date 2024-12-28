@@ -1,5 +1,7 @@
 // private modules
 mod handlers;
+mod cocktails;
+pub(crate) mod routes_common;
 
 // public modules
 pub mod configurations;
