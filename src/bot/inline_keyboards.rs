@@ -23,7 +23,7 @@ impl PageNumber {
     }
 }
 
-pub enum ListCoctailsSource {
+pub enum ListCocktailsSource {
     CocktailList,
     Favorites,
     CocktailListByName,
@@ -118,7 +118,7 @@ pub fn get_cocktails_list_keyboard(
     cocktails_paged: &CocktailsPaged,
     current_page: &PageNumber,
     page_size: &u64,
-    source: ListCoctailsSource,
+    source: ListCocktailsSource,
 ) -> InlineKeyboardMarkup {
     let mut keyboard: Vec<Vec<InlineKeyboardButton>> = vec![];
     for cocktail_info in cocktails_paged.items.chunks(1) {
@@ -127,11 +127,11 @@ pub fn get_cocktails_list_keyboard(
             .map(|cocktail_info| {
                 let current_page_v = current_page.0;
                 let command = match source {
-                    ListCoctailsSource::CocktailList => {
+                    ListCocktailsSource::CocktailList => {
                         &MenuCommands::CocktailsList(current_page_v)
                     }
-                    ListCoctailsSource::Favorites => &MenuCommands::ShowFavorites(current_page_v),
-                    ListCoctailsSource::CocktailListByName => {
+                    ListCocktailsSource::Favorites => &MenuCommands::ShowFavorites(current_page_v),
+                    ListCocktailsSource::CocktailListByName => {
                         &MenuCommands::CocktailsListByName(current_page_v)
                     }
                 };
@@ -157,7 +157,7 @@ pub fn get_cocktails_list_keyboard(
         .as_str(),
     );
     let (next_page_command, prev_page_command, get_pages_command) = match source {
-        ListCoctailsSource::CocktailList => (
+        ListCocktailsSource::CocktailList => (
             MenuCommands::get_cocktails_list_command_string(&current_page.next()),
             MenuCommands::get_cocktails_list_command_string(&current_page.previous()),
             MenuCommands::get_cocktail_pages_command_string(
@@ -165,7 +165,7 @@ pub fn get_cocktails_list_keyboard(
                 &MenuCommands::CocktailsList(0),
             ),
         ),
-        ListCoctailsSource::Favorites => (
+        ListCocktailsSource::Favorites => (
             MenuCommands::get_favorite_cocktails_command_string(&current_page.next()),
             MenuCommands::get_favorite_cocktails_command_string(&current_page.previous()),
             MenuCommands::get_cocktail_pages_command_string(
@@ -173,7 +173,7 @@ pub fn get_cocktails_list_keyboard(
                 &MenuCommands::ShowFavorites(0),
             ),
         ),
-        ListCoctailsSource::CocktailListByName => (
+        ListCocktailsSource::CocktailListByName => (
             MenuCommands::get_cocktails_list_by_name_command_string(&current_page.next()),
             MenuCommands::get_cocktails_list_by_name_command_string(&current_page.previous()),
             MenuCommands::get_cocktail_pages_command_string(

@@ -1,14 +1,14 @@
 // private modules
-mod handlers;
 mod cocktails;
 pub(crate) mod routes_common;
+mod system;
 
 // public modules
 pub mod configurations;
-pub mod responses;
 
+use cocktails::use_cocktails_api;
 use configurations::ApiConfiguration;
-use handlers::health_check;
+use system::use_system_api;
 use warp::{filters::cors::Builder, http::Method, Filter};
 
 pub struct ApiProvider {
@@ -25,13 +25,10 @@ impl ApiProvider {
 
 impl ApiProvider {
     pub async fn start_server(&self) {
-        let health_check_path = warp::path!("api" / "healthcheck")
-            .and(warp::get())
-            .and_then(health_check);
+        
+        let api = use_system_api().or(use_cocktails_api());
 
-        let routes = health_check_path
-            .with(self.add_cors())
-            .with(warp::log("api"));
+        let routes = api.with(self.add_cors()).with(warp::log("api"));
 
         log::info!("🚀 Server started successfully");
         warp::serve(routes)

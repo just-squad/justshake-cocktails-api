@@ -39,14 +39,14 @@ pub trait CocktailRepo {
     /// .
     async fn create(&self, entity: &Cocktail);
     /// .
-    async fn get_names(&self, filter: &CocktailNamesFilter) -> Result<CocktailsPaged>;
+    async fn get_names(&self, filter: &CocktailFilter) -> Result<CocktailsPaged>;
     /// .
     async fn get_by_id(&self, id: &Uuid) -> Result<Option<Cocktail>>;
     /// .
     async fn get_by_filter(&self, filter: &CocktailFilter) -> Result<CocktailsPaged>;
 }
 
-#[derive(Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct CocktailsPaged {
     pub items: Vec<Cocktail>,
     pub total_count: u64,
@@ -57,11 +57,5 @@ pub struct CocktailFilter {
     pub ids: Option<Vec<Uuid>>,
     pub names: Option<Vec<String>>,
     pub russian_names: Option<Vec<String>>,
-    pub pagination: crate::domain::Pagination,
-}
-
-#[derive(Clone, Debug)]
-pub struct CocktailNamesFilter {
-    pub ids: Vec<Uuid>,
     pub pagination: crate::domain::Pagination,
 }

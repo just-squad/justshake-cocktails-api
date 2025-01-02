@@ -13,13 +13,17 @@ tokio-stream = { version = "0.1", features = ["full"] }
 serde = "1.0"
 serde_json = "1.0"
 envconfig = "0.11.0"
-chrono = "0.4.38"
+chrono = "0.4"
 uuid = "1.10.0"
-futures="0.3.30"
+futures="0.3"
 async-trait="0.1.83"
 strum={version = "0.26", features = ["derive"]}
 thiserror={version="1.0"}
 dotenvy = { version = "0.15" }
+
+# swagger
+utoipa = {version = "5.3", features = ["uuid"]}
+utoipa-swagger-ui = {version = "8.1"}
 
 # infrastructure connections
 
