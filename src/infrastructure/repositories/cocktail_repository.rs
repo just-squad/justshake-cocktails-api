@@ -28,9 +28,34 @@ impl CocktailRepository {
 #[async_trait]
 impl CocktailRepo for CocktailRepository {
     async fn create(&self, entity: &Cocktail) {
-        let cocktail_collection = self.db_client.get_cocktails_collection();
-        let _insert_result = cocktail_collection
+        let _insert_result = self
+            .db_client
+            .get_cocktails_collection()
             .insert_one(CocktailDbModel::from(entity.clone()))
+            .await
+            .expect("Error while insert user to database");
+    }
+
+    async fn delete(&self, entity: &Cocktail) {
+        let uuid_mongo = mongodb::bson::Uuid::parse_str(entity.id.to_string()).unwrap();
+        let delete_filter = doc! {"id":  &uuid_mongo};
+        let _insert_result = self
+            .db_client
+            .get_cocktails_collection()
+            .find_one_and_delete(delete_filter)
+            .await
+            .expect("Error while insert user to database");
+    }
+
+    async fn update(&self, entity: &Cocktail) {
+        let uuid_mongo = mongodb::bson::Uuid::parse_str(entity.id.to_string()).unwrap();
+        let _insert_result = self
+            .db_client
+            .get_cocktails_collection()
+            .find_one_and_update(
+                doc! {"id": &uuid_mongo},
+                CocktailDbModel::from(entity.clone()),
+            )
             .await
             .expect("Error while insert user to database");
     }

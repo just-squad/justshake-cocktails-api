@@ -1,6 +1,6 @@
 // private modules
 mod cocktails;
-pub(crate) mod routes_common;
+pub(crate) mod common;
 mod system;
 
 // public modules

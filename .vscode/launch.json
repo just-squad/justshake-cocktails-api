@@ -18,10 +18,10 @@
           "name": "justshake-cocktails-api",
           "kind": "bin"
         },
-        "cwd": "${workspaceFolder}/backend"
+        "cwd": "${workspaceFolder}"
       },
       "args": [],
-      "cwd": "${workspaceFolder}/backend"
+      "cwd": "${workspaceFolder}"
     },
     {
       "type": "lldb",
@@ -38,10 +38,10 @@
           "name": "justshake-cocktails-api",
           "kind": "bin"
         },
-        "cwd": "${workspaceFolder}/backend"
+        "cwd": "${workspaceFolder}"
       },
       "args": [],
-      "cwd": "${workspaceFolder}/backend"
+      "cwd": "${workspaceFolder}"
     }
   ]
 }

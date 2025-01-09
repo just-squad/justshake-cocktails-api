@@ -17,6 +17,33 @@ pub(crate) struct Cocktail {
     pub(crate) recipe: Option<Recipe>,
 }
 
+impl Cocktail {
+    pub fn new(
+        name: Option<String>,
+        russian_name: String,
+        url: Option<String>,
+        country_of_origin: Option<String>,
+        history: Option<String>,
+        tags: Option<Vec<Tag>>,
+        tools: Option<Vec<CocktailItem>>,
+        composition_elements: Option<Vec<CocktailItem>>,
+        recipe: Option<Recipe>,
+    ) -> Self {
+        Cocktail {
+            id: uuid::Uuid::new_v4(),
+            url,
+            name,
+            russian_name,
+            country_of_origin,
+            history,
+            tags,
+            tools,
+            composition_elements,
+            recipe,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) struct Tag {
     pub(crate) name: String,
@@ -38,6 +65,10 @@ pub(crate) struct Recipe {
 pub trait CocktailRepo {
     /// .
     async fn create(&self, entity: &Cocktail);
+    /// .
+    async fn delete(&self, entity: &Cocktail);
+    /// .
+    async fn update(&self, entity: &Cocktail);
     /// .
     async fn get_names(&self, filter: &CocktailFilter) -> Result<CocktailsPaged>;
     /// .

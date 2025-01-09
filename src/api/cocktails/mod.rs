@@ -8,7 +8,7 @@ mod routes;
 
 #[derive(OpenApi)]
 #[openapi(
-    paths(handlers::get_by_id, handlers::list_by_filter)
+    paths(handlers::get_by_id, handlers::list_by_filter, handlers::create, handlers::update, handlers::delete)
 )]
 pub struct CocktailsApi;
 
@@ -17,4 +17,7 @@ pub fn use_cocktails_api(
     routes::get_by_id()
         .and_then(handlers::get_by_id)
         .or(routes::list_by_filter().and_then(handlers::list_by_filter))
+        .or(routes::create().and_then(handlers::create))
+        .or(routes::update().and_then(handlers::update))
+        .or(routes::delete().and_then(handlers::delete))
 }

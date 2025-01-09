@@ -1,8 +1,8 @@
 use warp::{filters::BoxedFilter, Filter};
 
-use crate::{api::routes_common::api_prefix, json_body};
+use crate::{api::common::api_prefix, json_body};
 
-use super::models::ListByFilterRequest;
+use super::models::{CreateRequest, UpdateRequest, DeleteRequest, ListByFilterRequest};
 
 fn path_prefix() -> BoxedFilter<()> {
     warp::path!("cocktails" / "v1" / ..).boxed()
@@ -26,29 +26,29 @@ pub fn list_by_filter() -> BoxedFilter<(ListByFilterRequest,)> {
         .boxed()
 }
 
-// pub fn create() -> BoxedFilter<(CreateRequest,)> {
-//     warp::post()
-//         .and(api_prefix())
-//         .and(path_prefix())
-//         .and(warp::path::end())
-//         .and(json_body!())
-//         .boxed()
-// }
+pub fn create() -> BoxedFilter<(CreateRequest,)> {
+    warp::post()
+        .and(api_prefix())
+        .and(path_prefix())
+        .and(warp::path::end())
+        .and(json_body!())
+        .boxed()
+}
 
-// pub fn update() -> BoxedFilter<(UpdateRequest,)> {
-//     warp::put()
-//         .and(api_prefix())
-//         .and(path_prefix())
-//         .and(warp::path::end())
-//         .and(json_body!())
-//         .boxed()
-// }
+pub fn update() -> BoxedFilter<(UpdateRequest,)> {
+    warp::put()
+        .and(api_prefix())
+        .and(path_prefix())
+        .and(warp::path::end())
+        .and(json_body!())
+        .boxed()
+}
 
-// pub fn delete() -> BoxedFilter<(DeleteRequest,)> {
-//     warp::delete()
-//         .and(api_prefix())
-//         .and(path_prefix())
-//         .and(warp::path::end())
-//         .and(json_body!())
-//         .boxed()
-// }
+pub fn delete() -> BoxedFilter<(DeleteRequest,)> {
+    warp::delete()
+        .and(api_prefix())
+        .and(path_prefix())
+        .and(warp::path::end())
+        .and(json_body!())
+        .boxed()
+}

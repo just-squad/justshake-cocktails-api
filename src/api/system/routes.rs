@@ -1,4 +1,4 @@
-use crate::api::routes_common::api_prefix;
+use crate::api::common::api_prefix;
 use warp::filters::BoxedFilter;
 use warp::Filter;
 
