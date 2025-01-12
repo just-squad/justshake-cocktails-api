@@ -174,15 +174,17 @@ impl Into<UpdateModifications> for CocktailDbModel {
         let bson_tools = mongodb::bson::to_bson(&self.tools).unwrap();
         let bson_recipe = mongodb::bson::to_bson(&self.recipe).unwrap();
 
-        UpdateModifications::Document(doc! {"$set":{"name": self.name},
-            "$set":{"russian_name": self.russian_name},
-            "$set":{"country_of_origin": self.country_of_origin},
-            "$set":{"history": self.history},
-            "$set":{"url": self.url},
-            "$set":{"tags": bson_tags},
-            "$set":{"composition_elements": bson_composition_elements},
-            "$set":{"tools": bson_tools},
-            "$set":{"recipe": bson_recipe}
+        UpdateModifications::Document(doc! {"$set":{
+            "name": self.name,
+            "russian_name": self.russian_name,
+            "country_of_origin": self.country_of_origin,
+            "history": self.history,
+            "url": self.url,
+            "tags": bson_tags,
+            "composition_elements": bson_composition_elements,
+            "tools": bson_tools,
+            "recipe": bson_recipe
+        },
         })
     }
 }
