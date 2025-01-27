@@ -94,9 +94,7 @@ impl Into<User> for UserDbModel {
 
 impl Into<UpdateModifications> for UserDbModel {
     fn into(self) -> UpdateModifications {
-     UpdateModifications::Document(
-            doc! {"$set":{"favorite_cocktails": self.favorite_cocktails}},
-        )
+        UpdateModifications::Document(doc! {"$set":{"favorite_cocktails": self.favorite_cocktails}})
     }
 }
 
@@ -169,6 +167,28 @@ impl Into<Cocktail> for CocktailDbModel {
     }
 }
 
+impl Into<UpdateModifications> for CocktailDbModel {
+    fn into(self) -> UpdateModifications {
+        let bson_tags = mongodb::bson::to_bson(&self.tags).unwrap();
+        let bson_composition_elements = mongodb::bson::to_bson(&self.composition_elements).unwrap();
+        let bson_tools = mongodb::bson::to_bson(&self.tools).unwrap();
+        let bson_recipe = mongodb::bson::to_bson(&self.recipe).unwrap();
+
+        UpdateModifications::Document(doc! {"$set":{
+            "name": self.name,
+            "russian_name": self.russian_name,
+            "country_of_origin": self.country_of_origin,
+            "history": self.history,
+            "url": self.url,
+            "tags": bson_tags,
+            "composition_elements": bson_composition_elements,
+            "tools": bson_tools,
+            "recipe": bson_recipe
+        },
+        })
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TagDbModel {
     pub name: String,
@@ -183,6 +203,13 @@ impl From<Tag> for TagDbModel {
 impl Into<Tag> for TagDbModel {
     fn into(self) -> Tag {
         Tag { name: self.name }
+    }
+}
+
+impl Into<UpdateModifications> for TagDbModel {
+    fn into(self) -> UpdateModifications {
+        UpdateModifications::Document(doc! {"$set":{"name": self.name}
+        })
     }
 }
 

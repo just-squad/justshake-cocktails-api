@@ -17,6 +17,33 @@ pub(crate) struct Cocktail {
     pub(crate) recipe: Option<Recipe>,
 }
 
+impl Cocktail {
+    pub fn new(
+        name: Option<String>,
+        russian_name: String,
+        url: Option<String>,
+        country_of_origin: Option<String>,
+        history: Option<String>,
+        tags: Option<Vec<Tag>>,
+        tools: Option<Vec<CocktailItem>>,
+        composition_elements: Option<Vec<CocktailItem>>,
+        recipe: Option<Recipe>,
+    ) -> Self {
+        Cocktail {
+            id: uuid::Uuid::new_v4(),
+            url,
+            name,
+            russian_name,
+            country_of_origin,
+            history,
+            tags,
+            tools,
+            composition_elements,
+            recipe,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) struct Tag {
     pub(crate) name: String,
@@ -39,14 +66,18 @@ pub trait CocktailRepo {
     /// .
     async fn create(&self, entity: &Cocktail);
     /// .
-    async fn get_names(&self, filter: &CocktailNamesFilter) -> Result<CocktailsPaged>;
+    async fn delete(&self, entity: &Cocktail);
+    /// .
+    async fn update(&self, entity: &Cocktail);
+    /// .
+    async fn get_names(&self, filter: &CocktailFilter) -> Result<CocktailsPaged>;
     /// .
     async fn get_by_id(&self, id: &Uuid) -> Result<Option<Cocktail>>;
     /// .
     async fn get_by_filter(&self, filter: &CocktailFilter) -> Result<CocktailsPaged>;
 }
 
-#[derive(Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct CocktailsPaged {
     pub items: Vec<Cocktail>,
     pub total_count: u64,
@@ -57,11 +88,5 @@ pub struct CocktailFilter {
     pub ids: Option<Vec<Uuid>>,
     pub names: Option<Vec<String>>,
     pub russian_names: Option<Vec<String>>,
-    pub pagination: crate::domain::Pagination,
-}
-
-#[derive(Clone, Debug)]
-pub struct CocktailNamesFilter {
-    pub ids: Vec<Uuid>,
     pub pagination: crate::domain::Pagination,
 }

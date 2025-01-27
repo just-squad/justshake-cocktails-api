@@ -5,7 +5,7 @@ use teloxide::utils::markdown::escape;
 use uuid::Uuid;
 
 use super::commands::MenuCommands;
-use super::inline_keyboards::{self, ListCoctailsSource};
+use super::inline_keyboards::{self, ListCocktailsSource};
 use crate::bot::inline_keyboards::PageNumber;
 use crate::domain::aggregates::cocktail::{CocktailFilter, CocktailsPaged};
 use crate::domain::aggregates::user::User;
@@ -14,7 +14,7 @@ use crate::{
     bot::TgBotProvider,
     domain::{
         aggregates::{
-            cocktail::{CocktailNamesFilter, CocktailRepo},
+            cocktail::CocktailRepo,
             user::UserRepo,
         },
         Pagination,
@@ -110,8 +110,10 @@ where
 {
     async fn handle(&self, command: GetCocktailsListCommand) -> Result<()> {
         let page_size: u64 = 10;
-        let cocktails_filter = CocktailNamesFilter {
-            ids: vec![],
+        let cocktails_filter = CocktailFilter {
+            ids: Some(vec![]),
+            names: None,
+            russian_names: None,
             pagination: Pagination {
                 page: command.next_page,
                 items_per_page: page_size,
@@ -122,7 +124,7 @@ where
             &_cocktails_names,
             &PageNumber(command.next_page),
             &page_size,
-            ListCoctailsSource::CocktailList,
+            ListCocktailsSource::CocktailList,
         );
         let callback_cloned = command.callback.clone();
         let chat_id = callback_cloned.chat_id().unwrap();
@@ -167,7 +169,7 @@ where
             &_cocktails_names,
             &PageNumber(command.next_page),
             &page_size,
-            ListCoctailsSource::CocktailListByName,
+            ListCocktailsSource::CocktailListByName,
         );
         let _ = if let Some(message_id) = command.message_id {
             let mut send_message = self.bot_provider.bot.edit_message_text(
@@ -215,8 +217,10 @@ where
                     total_count: 0,
                 }
             } else {
-                let cocktails_filter = CocktailNamesFilter {
-                    ids: user.favorite_cocktails,
+                let cocktails_filter = CocktailFilter {
+                    ids: Some(user.favorite_cocktails),
+                    names: None,
+                    russian_names: None,
                     pagination: Pagination {
                         page: command.next_page,
                         items_per_page: page_size,
@@ -228,7 +232,7 @@ where
                 &cocktails_names,
                 &PageNumber(command.next_page),
                 &page_size,
-                ListCoctailsSource::Favorites,
+                ListCocktailsSource::Favorites,
             );
             let mut edit_message_text =
                 self.bot_provider

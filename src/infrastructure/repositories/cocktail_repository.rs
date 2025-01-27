@@ -4,9 +4,7 @@ use mongodb::bson::doc;
 use tokio_stream::StreamExt;
 
 use crate::{
-    domain::aggregates::cocktail::{
-        Cocktail, CocktailFilter, CocktailNamesFilter, CocktailRepo, CocktailsPaged,
-    },
+    domain::aggregates::cocktail::{Cocktail, CocktailFilter, CocktailRepo, CocktailsPaged},
     infrastructure::{
         configurations::DbConfiguration,
         mongo::{CocktailDbModel, MongoDbClient},
@@ -30,24 +28,73 @@ impl CocktailRepository {
 #[async_trait]
 impl CocktailRepo for CocktailRepository {
     async fn create(&self, entity: &Cocktail) {
-        let cocktail_collection = self.db_client.get_cocktails_collection();
-        let _insert_result = cocktail_collection
+        let _insert_result = self
+            .db_client
+            .get_cocktails_collection()
             .insert_one(CocktailDbModel::from(entity.clone()))
             .await
             .expect("Error while insert user to database");
     }
 
-    async fn get_names(&self, filter: &CocktailNamesFilter) -> Result<CocktailsPaged> {
-        let filter_document = if !filter.ids.is_empty() {
+    async fn delete(&self, entity: &Cocktail) {
+        let uuid_mongo = mongodb::bson::Uuid::parse_str(entity.id.to_string()).unwrap();
+        let delete_filter = doc! {"id":  &uuid_mongo};
+        let _insert_result = self
+            .db_client
+            .get_cocktails_collection()
+            .find_one_and_delete(delete_filter)
+            .await
+            .expect("Error while insert user to database");
+    }
+
+    async fn update(&self, entity: &Cocktail) {
+        let uuid_mongo = mongodb::bson::Uuid::parse_str(entity.id.to_string()).unwrap();
+        let _insert_result = self
+            .db_client
+            .get_cocktails_collection()
+            .find_one_and_update(
+                doc! {"id": &uuid_mongo},
+                CocktailDbModel::from(entity.clone()),
+            )
+            .await
+            .expect("Error while insert user to database");
+    }
+
+    async fn get_names(&self, filter: &CocktailFilter) -> Result<CocktailsPaged> {
+        let filter_by_ids = if !filter.ids.is_some() {
             let uuids_doc: Vec<mongodb::bson::Document> = filter
                 .ids
-                .iter()
-                .map(|id| doc! {"id": mongodb::bson::Uuid::parse_str(id.to_string()).unwrap()})
-                .collect();
+                .as_ref()
+                .map(|ids| {
+                    ids
+                    .iter()
+                    .map(|id| doc! {"id": mongodb::bson::Uuid::parse_str(id.to_string()).unwrap()})
+                    .collect()
+                })
+                .unwrap();
             doc! {"$or":uuids_doc}
         } else {
             doc! {}
         };
+
+        let filter_by_en_names = if let Some(names) = &filter.names {
+            let names_doc: Vec<mongodb::bson::Document> =
+                names.iter().map(|name| doc! {"name": doc!{"$regex": mongodb::bson::Regex{ pattern: format!("[a-zA-Zа-яА-Я0-9 ]*({})[a-zA-Zа-яА-Я0-9 ]*", name), options: "mi".to_string() }}}).collect();
+            doc! {"$or": names_doc}
+        } else {
+            doc! {}
+        };
+
+        let filter_by_russian_names = if let Some(rus_names) = &filter.russian_names {
+            let names_doc: Vec<mongodb::bson::Document> =
+                rus_names.iter().map(|name| doc! {"russian_name": doc!{"$regex": mongodb::bson::Regex{ pattern: format!("[a-zA-Zа-яА-Я0-9 ]*({})[a-zA-Zа-яА-Я0-9 ]*", name), options: "mi".to_string() }}}).collect();
+            doc! {"$or": names_doc}
+        } else {
+            doc! {}
+        };
+
+        let filter_by_names = doc! {"$or": vec![filter_by_en_names, filter_by_russian_names]};
+        let filter_document = doc! {"$and": vec![filter_by_names, filter_by_ids]};
 
         let result = self
             .db_client
@@ -90,7 +137,6 @@ impl CocktailRepo for CocktailRepository {
     }
 
     async fn get_by_filter(&self, filter: &CocktailFilter) -> Result<CocktailsPaged> {
-        let _cocktail_collection = self.db_client.get_cocktails_collection();
         let filter_by_ids = if let Some(ids) = &filter.ids {
             let uuids_doc: Vec<mongodb::bson::Document> = ids
                 .iter()
@@ -100,6 +146,7 @@ impl CocktailRepo for CocktailRepository {
         } else {
             doc! {}
         };
+
         let filter_by_en_names = if let Some(names) = &filter.names {
             let names_doc: Vec<mongodb::bson::Document> =
                 names.iter().map(|name| doc! {"name": doc!{"$regex": mongodb::bson::Regex{ pattern: format!("[a-zA-Zа-яА-Я0-9 ]*({})[a-zA-Zа-яА-Я0-9 ]*", name), options: "mi".to_string() }}}).collect();
@@ -107,6 +154,7 @@ impl CocktailRepo for CocktailRepository {
         } else {
             doc! {}
         };
+
         let filter_by_russian_names = if let Some(rus_names) = &filter.russian_names {
             let names_doc: Vec<mongodb::bson::Document> =
                 rus_names.iter().map(|name| doc! {"russian_name": doc!{"$regex": mongodb::bson::Regex{ pattern: format!("[a-zA-Zа-яА-Я0-9 ]*({})[a-zA-Zа-яА-Я0-9 ]*", name), options: "mi".to_string() }}}).collect();
@@ -114,13 +162,14 @@ impl CocktailRepo for CocktailRepository {
         } else {
             doc! {}
         };
+
         let filter_by_names = doc! {"$or": vec![filter_by_en_names, filter_by_russian_names]};
         let filter_document = doc! {"$and": vec![filter_by_names, filter_by_ids]};
+
         let result = self
             .db_client
             .get_cocktails_collection()
             .find(filter_document.clone())
-            .projection(doc! {"id":1, "russian_name":1})
             .limit(filter.pagination.items_per_page as i64)
             .skip(filter.pagination.page * filter.pagination.items_per_page)
             .await
